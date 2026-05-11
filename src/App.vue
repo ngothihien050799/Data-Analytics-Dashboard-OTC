@@ -122,6 +122,16 @@ const processFile = async () => {
       </div>
 
       <div class="actions">
+        <a 
+          href="https://docs.google.com/spreadsheets/d/1YrSaIufQJzRe_5CuXSFc4EJDzXKzYTS_39z2-HwWOVI/edit?usp=sharing" 
+          target="_blank" 
+          class="icon-btn btn-secondary"
+          title="Tải file dữ liệu mẫu"
+          style="text-decoration: none; padding: 0.75rem 2rem; font-size: 1rem; border-radius: 12px; height: auto; font-weight: 600;"
+        >
+          <FileSpreadsheet :size="20" />
+          <span>Tải mẫu</span>
+        </a>
         <button 
           class="btn-primary" 
           :disabled="!file || loading"
@@ -278,6 +288,10 @@ const processFile = async () => {
 
 .actions {
   margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: stretch;
 }
 
 .feedback {
