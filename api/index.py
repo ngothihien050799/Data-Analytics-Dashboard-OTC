@@ -5,6 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 import io
+import math
 
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -186,7 +187,7 @@ def process_data(input_file_path):
         
         chu_ky_tb = None
         if diff1 is not None and diff2 is not None: 
-            chu_ky_tb = round((diff1 + diff2) / 2)
+            chu_ky_tb = math.ceil((diff1 + diff2) / 2)
         
         du_bao = None
         if chu_ky_tb is not None:

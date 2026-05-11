@@ -61,7 +61,7 @@ const downloadExcel = () => {
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '-'
   if (typeof num === 'number') {
-    return Math.round(num).toLocaleString('vi-VN')
+    return Math.ceil(num).toLocaleString('vi-VN')
   }
   return num
 }
