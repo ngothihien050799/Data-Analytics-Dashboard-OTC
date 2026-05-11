@@ -69,7 +69,8 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                 if val is None: continue
                 if isinstance(val, (int, float)):
                     if "Điểm" in col_name or col_name == "ĐIỂM TỔNG": cell.number_format = '0.00'
-                    elif "DS" in col_name or "doanh số" in col_name.lower(): cell.number_format = '#,##0'
+                    elif "DS" in col_name or "doanh số" in col_name.lower(): cell.number_format = '#,##0.##'
+                    elif col_name == "Chu kỳ TB": cell.number_format = '0.##'
                 if col_name == 'Hạng KH':
                     if val == 'VIP': cell.fill, cell.font = PatternFill(start_color='FEF08A', end_color='FEF08A', fill_type='solid'), Font(color='854D0E', bold=True)
                     elif val == 'GOLD': cell.fill, cell.font = PatternFill(start_color='FEF3C7', end_color='FEF3C7', fill_type='solid'), Font(color='B45309', bold=True)
@@ -184,11 +185,12 @@ def process_data(input_file_path):
         days_since = (today.date() - last_buy).days if last_buy else None
         
         chu_ky_tb = None
-        if diff1 is not None and diff2 is not None: chu_ky_tb = (diff1 + diff2) / 2
+        if diff1 is not None and diff2 is not None: 
+            chu_ky_tb = (diff1 + diff2) / 2
         
         du_bao = None
-        if last_buy and chu_ky_tb is not None:
-            du_bao = (last_buy + timedelta(days=chu_ky_tb)).strftime('%d/%m/%Y')
+        if chu_ky_tb is not None:
+            du_bao = (today.date() + timedelta(days=chu_ky_tb)).strftime('%d/%m/%Y')
             
         if days_since is None: trang_thai = "Chưa mua"
         elif days_since <= 60: trang_thai = "Hoạt động"
