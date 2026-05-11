@@ -71,7 +71,7 @@ const processFile = async () => {
     <header class="app-header">
       <div class="header-left">
         <div class="logo">
-          <FileSpreadsheet size="32" color="#6366f1" />
+          <img src="/logo.png" alt="CPC1HN Logo" class="app-logo" />
         </div>
         <h1>Data Analytics Dashboard</h1>
       </div>
@@ -194,6 +194,12 @@ const processFile = async () => {
 </template>
 
 <style scoped>
+.app-logo {
+  width: 48px;
+  height: auto;
+  object-fit: contain;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;
