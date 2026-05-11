@@ -20,20 +20,80 @@ const emit = defineEmits(['close'])
 
       <div class="modal-body">
         <div class="section">
-          <h3>1. Bảng Tổng Hợp</h3>
-          <ul class="explain-list">
-            <li><strong>Ngày mua cuối:</strong> Lấy từ ngày đặt hàng gần đây nhất của khách hàng (chỉ tính trong khoảng thời gian quy định ở cấu hình, mặc định 6 tháng).</li>
-            <li><strong>Số lần mua (6T):</strong> Đếm số lần khách hàng có phát sinh đơn hàng (số ngày mua khác nhau) trong khoảng 6 tháng qua.</li>
-            <li><strong>Tổng doanh số 6 tháng:</strong> Tổng cộng thành tiền (Số lượng × Đơn giá) của tất cả đơn hàng trong 6 tháng.</li>
-            <li><strong>Số ngày mua gần nhất:</strong> Hiệu số ngày giữa ngày hiện tại và <em>Ngày mua cuối</em>. (Càng nhỏ tức là mới mua càng gần đây).</li>
-            <li><strong>Số ngày mua gần thứ 2:</strong> Số ngày giữa lần mua cuối cùng (gần nhất) và lần mua trước đó (lần 2).</li>
-            <li><strong>Số ngày mua gần thứ 3:</strong> Số ngày giữa lần mua thứ 2 và lần mua thứ 3.</li>
-            <li><strong>Số lần đã gặp:</strong> Tổng số cuộc gọi hoặc gặp gỡ được ghi nhận trong sheet Call.</li>
-            <li><strong>Số ngày chưa gặp:</strong> Hiệu số ngày giữa ngày hiện tại và lần checkin/gặp mặt cuối cùng.</li>
-            <li><strong>Hạng KH:</strong> Phân loại thành VIP, GOLD, NORMAL hoặc NEW dựa trên việc so sánh <em>Tổng doanh số 6 tháng</em> với các ngưỡng DS đã định trong mục Cài đặt.</li>
-            <li><strong>DS mục tiêu & Call thiếu:</strong> Được lấy trực tiếp từ bảng định mức giao theo tuần/tháng (sheet FrequencyF).</li>
-            <li><strong>DS thiếu:</strong> Bằng <em>DS mục tiêu</em> trừ đi <em>Tổng doanh số 6 tháng</em>. (Nếu số âm tức là đã vượt mục tiêu).</li>
-          </ul>
+        <div class="section">
+          <h3>1. YÊU CẦU BẢNG "7_TongHop" — TỔNG HỢP THỐNG KÊ KHÁCH HÀNG</h3>
+          <div class="explain-content">
+            <h4>1. MỤC ĐÍCH</h4>
+            <p>Sheet tổng hợp toàn bộ chỉ số hoạt động của từng khách hàng trọng tâm trong kỳ báo cáo, phục vụ cho hệ thống chấm điểm RFM và quản lý ghé thăm. Mỗi dòng = 1 khách hàng.</p>
+            
+            <h4>2. NGUỒN DỮ LIỆU ĐẦU VÀO</h4>
+            <ul>
+              <li><strong>2_KHTrongTam:</strong> Danh sách khách hàng trọng tâm (Mã KH, Tên KH)</li>
+              <li><strong>3_Đơn hàng:</strong> Lịch sử đơn hàng (ngày đặt, số lượng, đơn giá, mã KH)</li>
+              <li><strong>4_Call:</strong> Lịch sử ghé thăm thực địa (ngày checkin, mã KH)</li>
+              <li><strong>5_FrequencyF:</strong> Tần suất ghé thăm kế hoạch và doanh số mục tiêu theo KH</li>
+              <li><strong>Cấu hình:</strong> Các ngưỡng cấu hình để tham chiếu, thay đổi thì thác đổi các giá trị ở bảng khác</li>
+            </ul>
+
+            <h4>3. CẤU TRÚC CỘT</h4>
+            
+            <h5>Nhóm A — THÔNG TIN KH</h5>
+            <ul>
+              <li><strong>Mã KH:</strong> Lấy toàn bộ từ 2_KHTrongTam</li>
+              <li><strong>Tên khách hàng:</strong> Tra theo Mã KH từ 2_KHTrongTam</li>
+            </ul>
+
+            <h5>Nhóm B — LỊCH SỬ MUA HÀNG (từ 3_Đơn hàng)</h5>
+            <ul>
+              <li><strong>Ngày mua cuối:</strong> MAX(Ngày đặt) theo Mã KH</li>
+              <li><strong>Số lần mua trong 6 tháng:</strong> COUNT(ngày khác nhau có đơn) trong 6 tháng gần nhất</li>
+              <li><strong>Tổng doanh số 6 tháng (VNĐ):</strong> SUM(Số lượng × Đơn giá) trong 6 tháng gần nhất</li>
+              <li><strong>Số ngày mua gần nhất:</strong> Ngày hôm nay − Ngày mua cuối</li>
+              <li><strong>Số ngày mua gần thứ hai:</strong> Ngày mua 1 − Ngày mua 2 (khoảng cách 2 lần gần nhất)</li>
+              <li><strong>Số ngày mua gần thứ ba:</strong> Ngày mua 2 − Ngày mua 3 (khoảng cách lần 2 và 3)</li>
+              <p class="note"><em>Lưu ý: Dùng để tính chu kỳ mua trung bình = (G + H) / 2. Nếu KH chưa đủ 2–3 lần mua thì để trống.</em></p>
+            </ul>
+
+            <h5>Nhóm C — HOẠT ĐỘNG GHÉ THĂM (từ 4_Call)</h5>
+            <ul>
+              <li><strong>Số lần đã gặp:</strong> COUNT(checkin) trong tháng hiện tại theo Mã KH</li>
+              <li><strong>Số ngày chưa gặp:</strong> Ngày hôm nay − MAX(Ngày checkin) theo Mã KH</li>
+            </ul>
+
+            <h5>Nhóm D — PHÂN LOẠI & DOANH SỐ THÁNG</h5>
+            <ul>
+              <li><strong>Hạng KH:</strong> Phân hạng theo Tổng DS 6 tháng: VIP ≥ 18tr / GOLD 6–18tr / NORMAL 1–6tr / NEW &lt; 1tr</li>
+              <li><strong>Tổng DS tháng (VNĐ):</strong> SUM(Số lượng × Đơn giá) trong tháng hiện tại theo Mã KH</li>
+            </ul>
+
+            <h5>Nhóm E — CHỈ SỐ THIẾU HỤT (từ 5_FrequencyF)</h5>
+            <ul>
+              <li><strong>Call thiếu:</strong> MAX(Tần suất F) − Số lần đã gặp. Âm = đã đủ / vượt</li>
+              <li><strong>DS thiếu (VNĐ):</strong> MAX(Doanh số KH mục tiêu) − DS tháng. Âm = đã vượt mục tiêu</li>
+              <p class="note"><em>Lưu ý: Nếu 1 KH có nhiều dòng trong 5_FrequencyF thì lấy giá trị lớn nhất.</em></p>
+            </ul>
+
+            <h5>Nhóm F — Xu hướng & Hành động</h5>
+            <ul>
+              <li><strong>Xu hướng mua:</strong> So sánh DS tháng hiện tại với DS tháng trước để nhận diện xu hướng ("📈 Tăng" / "📉 Giảm" / "➡ Ổn định")</li>
+              <li><strong>Chu kỳ TB:</strong> = (Số ngày mua gần thứ hai + Số ngày mua gần thứ ba) / 2</li>
+              <li><strong>Dự báo ngày mua tiếp:</strong> = Ngày mua cuối + Chu kỳ TB</li>
+              <li><strong>Trạng thái hoạt động:</strong> 
+                "Hoạt động": Ngày mua cuối ≤ 60 ngày, 
+                "Cảnh báo": 60 &lt; Ngày mua cuối ≤ 120 ngày, 
+                "Ngủ đông": Ngày mua cuối &gt; 120 ngày, 
+                "Chưa mua": Không có đơn hàng nào
+              </li>
+            </ul>
+
+            <h4>4. QUY TẮC TÍNH TOÁN CHI TIẾT</h4>
+            <ul>
+              <li><strong>Ngày tham chiếu:</strong> Lấy ngày hôm nay. "Tháng hiện tại" = tháng và năm của ngày hôm nay. "6 tháng gần nhất" = từ ngày đầu tháng cách đây 6 tháng đến hôm nay.</li>
+              <li><strong>Tính doanh số:</strong> Doanh thu 1 dòng = Số lượng × Đơn giá. Tổng DS 6T = SUM trong 6 tháng gần nhất. DS tháng = SUM trong tháng hiện tại.</li>
+              <li><strong>Phân hạng KH:</strong> Tham chiếu từ sheet Cấu hình.</li>
+              <li><strong>Xử lý thiếu dữ liệu:</strong> KH chưa có đơn hàng -> trống/0. KH chỉ có 1 lần mua -> G, H trống. KH chưa từng được ghé thăm -> Số lần gặp = 0, Số ngày chưa gặp = trống.</li>
+            </ul>
+          </div>
         </div>
 
         <div class="section mt-6">
@@ -152,6 +212,54 @@ const emit = defineEmits(['close'])
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.9rem;
+}
+
+.explain-content h4 {
+  font-size: 1.05rem;
+  color: #e2e8f0;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.explain-content h5 {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.25rem;
+}
+
+.explain-content p {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.explain-content ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.explain-content ul li {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.explain-content ul li strong {
+  color: #f8fafc;
+}
+
+.note {
+  font-size: 0.85rem !important;
+  color: #64748b !important;
+  margin-top: 0.25rem;
 }
 
 .mt-6 {
