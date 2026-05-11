@@ -1,0 +1,102 @@
+{
+  "1": [
+    "R — Recency",
+    "20%"
+  ],
+  "2": [
+    "F — Frequency",
+    "15%"
+  ],
+  "3": [
+    "M — Monetary",
+    "20%"
+  ],
+  "4": [
+    "Hạng KH",
+    "20%"
+  ],
+  "5": [
+    "Call",
+    "10%"
+  ],
+  "6": [
+    "Chu kỳ mua",
+    "10%"
+  ],
+  "7": [
+    "TỔNG TRỌNG SỐ",
+    "100%"
+  ],
+  "8": [
+    "None",
+    "None"
+  ],
+  "9": [
+    "THÔNG SỐ HỆ THỐNG",
+    "None"
+  ],
+  "10": [
+    "Ngày hôm nay",
+    "46145"
+  ],
+  "11": [
+    "Số KH cần chọn mỗi tuần",
+    "70"
+  ],
+  "12": [
+    "Max ngày Recency (ngày)",
+    "120"
+  ],
+  "13": [
+    "Cửa sổ tính Frequency (tháng)",
+    "4"
+  ],
+  "14": [
+    "Max lần mua (Frequency)",
+    "12"
+  ],
+  "15": [
+    "Ngưỡng DS tối đa (Monetary)",
+    "18000000"
+  ],
+  "16": [
+    "Max ngày Call (ngày)",
+    "120"
+  ],
+  "17": [
+    "None",
+    "None"
+  ],
+  "18": [
+    "NGƯỠNG PHÂN HẠNG & TRẠNG THÁI KHÁCH HÀNG",
+    "None"
+  ],
+  "19": [
+    "Tham số",
+    "Giá trị"
+  ],
+  "20": [
+    "Ngưỡng VIP (DS 6 tháng)",
+    "18000000"
+  ],
+  "21": [
+    "Ngưỡng GOLD (DS 6 tháng)",
+    "6000000"
+  ],
+  "22": [
+    "Ngưỡng NORMAL (DS 6 tháng)",
+    "1000000"
+  ],
+  "23": [
+    "Cửa sổ tính DS tổng (tháng)",
+    "6"
+  ],
+  "24": [
+    "Ngưỡng ngày \"Cảnh báo\" (ngày)",
+    "60"
+  ],
+  "25": [
+    "Ngưỡng ngày \"Ngủ đông\" (ngày)",
+    "120"
+  ]
+}
