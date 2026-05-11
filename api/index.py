@@ -100,6 +100,7 @@ def process_data(input_file_path):
         
         chu_ky_tb = None
         if diff1 is not None and diff2 is not None: chu_ky_tb = (diff1 + diff2) / 2
+        elif diff1 is not None: chu_ky_tb = diff1
         
         du_bao = None
         if last_buy and chu_ky_tb is not None:
@@ -116,7 +117,6 @@ def process_data(input_file_path):
             'Số lần mua trong 6 tháng': len(sorted_dates),
             'Tổng doanh số 6 tháng': group['Revenue'].sum(),
             'Tổng DS tháng': ds_thang,
-            'Tổng DS tháng trước': ds_thang_truoc,
             'Xu hướng mua': xu_huong,
             'Số ngày mua gần nhất': days_since,
             'Số ngày mua gần thứ 2': diff1,
@@ -223,7 +223,7 @@ def process_data(input_file_path):
         'Mã KH', 'Tên khách hàng', 
         'Ngày mua cuối', 'Số lần mua trong 6 tháng', 'Tổng doanh số 6 tháng', 'Số ngày mua gần nhất', 'Số ngày mua gần thứ 2', 'Số ngày mua gần thứ 3', 
         'Số lần đã gặp', 'Số ngày chưa gặp', 
-        'Hạng KH', 'Tổng DS tháng', 'Tổng DS tháng trước',
+        'Hạng KH', 'Tổng DS tháng', 
         'Call thiếu', 'DS mục tiêu', 'DS thiếu',
         'Xu hướng mua', 'Chu kỳ TB', 'Dự báo ngày mua tiếp', 'Trạng thái hoạt động'
     ]
