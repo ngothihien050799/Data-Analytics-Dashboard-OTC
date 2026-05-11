@@ -188,7 +188,7 @@ const processFile = async () => {
       </div>
       <div class="feature-item">
         <h3>⚙️ Cấu hình Linh hoạt</h3>
-        <p>Mọi tham số tính toán đều được tham chiếu từ file Cấu hình.xlsx, dễ dàng điều chỉnh.</p>
+        <p>Mọi tham số tính toán đều được tham chiếu từ file Cấu_hình.xlsx, dễ dàng điều chỉnh.</p>
       </div>
     </section>
 
