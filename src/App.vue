@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Loader2, Settings, User, BookOpen } from 'lucide-vue-next'
+import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Loader2, Settings, User, BookOpen, ExternalLink } from 'lucide-vue-next'
 import ConfigModal from './components/ConfigModal.vue'
 import ResultTable from './components/ResultTable.vue'
 import ExplanationModal from './components/ExplanationModal.vue'
@@ -76,6 +76,10 @@ const processFile = async () => {
         <h1>Data Analytics Dashboard</h1>
       </div>
       <div class="header-right">
+        <a href="https://drive.google.com/drive/folders/1FJCHDyb4mM7uAADZzVy6fzuKzU4pJFcR" target="_blank" class="icon-btn btn-secondary" title="Mở tài liệu hướng dẫn">
+          <ExternalLink size="20" />
+          <span>Tài liệu</span>
+        </a>
         <button class="icon-btn btn-secondary" @click="showExplanation = true" title="Giải thích tính toán">
           <BookOpen size="20" />
           <span>Hướng dẫn</span>
@@ -229,6 +233,7 @@ const processFile = async () => {
   color: #e2e8f0;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s;
 }
 
