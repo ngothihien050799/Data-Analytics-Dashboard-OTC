@@ -138,7 +138,7 @@ const getAlertStyle = (col, val) => {
 const getGroupClass = (col) => {
   const history = ['Ngày mua cuối', 'Số lần mua trong 6 tháng', 'Tổng doanh số 6 tháng', 'Số ngày mua gần nhất', 'Số ngày mua gần thứ 2', 'Số ngày mua gần thứ 3']
   const hoatdong = ['Số lần đã gặp', 'Số ngày chưa gặp']
-  const tonghop = ['Hạng KH', 'Tổng DS tháng']
+  const tonghop = ['Hạng KH', 'Tổng DS tháng', 'Tổng DS tháng trước']
   const gap = ['Call thiếu', 'DS mục tiêu', 'DS thiếu']
   const trend = ['Xu hướng mua', 'Chu kỳ TB', 'Dự báo ngày mua tiếp', 'Trạng thái hoạt động']
   
@@ -274,7 +274,7 @@ const tonghopHeaders = computed(() => {
             <th colspan="2" class="text-center group-kh">THÔNG TIN KH</th>
             <th colspan="6" class="text-center group-history">LỊCH SỬ MUA HÀNG</th>
             <th colspan="2" class="text-center group-hoatdong">HOẠT ĐỘNG GHÉ THĂM</th>
-            <th colspan="2" class="text-center group-tonghop">PHÂN LOẠI & DOANH SỐ THÁNG</th>
+            <th colspan="3" class="text-center group-tonghop">PHÂN LOẠI & DOANH SỐ THÁNG</th>
             <th colspan="3" class="text-center group-gap">CHỈ SỐ THIẾU HỤT</th>
             <th colspan="4" class="text-center group-trend">XU HƯỚNG & HÀNH ĐỘNG</th>
           </tr>
