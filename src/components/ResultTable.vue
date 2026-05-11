@@ -155,7 +155,14 @@ const getGroupClass = (col) => {
 // Extract headers for tonghop dynamically
 const tonghopHeaders = computed(() => {
   if (props.dataTonghop.length === 0) return []
-  return Object.keys(props.dataTonghop[0])
+  return [
+    'Mã KH', 'Tên khách hàng', 
+    'Ngày mua cuối', 'Số lần mua trong 6 tháng', 'Tổng doanh số 6 tháng', 'Số ngày mua gần nhất', 'Số ngày mua gần thứ 2', 'Số ngày mua gần thứ 3', 
+    'Số lần đã gặp', 'Số ngày chưa gặp', 
+    'Hạng KH', 'Tổng DS tháng', 'Tổng DS tháng trước',
+    'Call thiếu', 'DS mục tiêu', 'DS thiếu',
+    'Xu hướng mua', 'Chu kỳ TB', 'Dự báo ngày mua tiếp', 'Trạng thái hoạt động'
+  ]
 })
 </script>
 
