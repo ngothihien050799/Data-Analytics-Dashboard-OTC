@@ -137,7 +137,6 @@ const emit = defineEmits(['close'])
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-  text-align: left;
 }
 
 .modal-header {
@@ -176,6 +175,18 @@ const emit = defineEmits(['close'])
   margin-bottom: 1rem;
   border-left: 4px solid #6366f1;
   padding-left: 0.75rem;
+}
+
+.section:first-child {
+  text-align: left;
+}
+
+.section:last-child {
+  text-align: center;
+}
+
+.section:last-child .explain-list {
+  align-items: center;
 }
 
 .explain-list {
