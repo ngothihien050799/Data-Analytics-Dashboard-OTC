@@ -69,8 +69,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                 if val is None: continue
                 if isinstance(val, (int, float)):
                     if "Điểm" in col_name or col_name == "ĐIỂM TỔNG": cell.number_format = '0.00'
-                    elif "DS" in col_name or "doanh số" in col_name.lower(): cell.number_format = '#,##0.##'
-                    elif col_name == "Chu kỳ TB": cell.number_format = '0.##'
+                    elif "DS" in col_name or "doanh số" in col_name.lower() or col_name == "Chu kỳ TB": cell.number_format = '#,##0'
                 if col_name == 'Hạng KH':
                     if val == 'VIP': cell.fill, cell.font = PatternFill(start_color='FEF08A', end_color='FEF08A', fill_type='solid'), Font(color='854D0E', bold=True)
                     elif val == 'GOLD': cell.fill, cell.font = PatternFill(start_color='FEF3C7', end_color='FEF3C7', fill_type='solid'), Font(color='B45309', bold=True)
@@ -186,7 +185,7 @@ def process_data(input_file_path):
         
         chu_ky_tb = None
         if diff1 is not None and diff2 is not None: 
-            chu_ky_tb = (diff1 + diff2) / 2
+            chu_ky_tb = round((diff1 + diff2) / 2)
         
         du_bao = None
         if chu_ky_tb is not None:
