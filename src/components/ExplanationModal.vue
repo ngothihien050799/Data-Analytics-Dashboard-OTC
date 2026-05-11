@@ -113,6 +113,10 @@ const emit = defineEmits(['close'])
 </template>
 
 <style scoped>
+* {
+  box-sizing: border-box;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -185,8 +189,9 @@ const emit = defineEmits(['close'])
   text-align: center;
 }
 
-.section:last-child .explain-list {
-  align-items: center;
+.section:last-child .explain-list li {
+  width: 100%;
+  text-align: center;
 }
 
 .explain-list {
@@ -206,6 +211,8 @@ const emit = defineEmits(['close'])
   font-size: 0.95rem;
   line-height: 1.5;
   color: #cbd5e1;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .explain-list li strong {
@@ -223,6 +230,10 @@ const emit = defineEmits(['close'])
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.9rem;
+  word-break: break-all;
+  white-space: pre-wrap;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .explain-content h4 {
