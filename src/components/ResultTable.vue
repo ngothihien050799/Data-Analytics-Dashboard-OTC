@@ -454,9 +454,9 @@ th, td {
 
 /* Multi-level header styles */
 .group-header th {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #f8fafc;
+  font-size: 0.85rem;
+  font-weight: 900 !important;
+  color: #ffffff !important;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
