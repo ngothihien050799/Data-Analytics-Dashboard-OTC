@@ -254,8 +254,9 @@ def handle_process():
     
     try:
         import base64
-        # Save temp file
-        temp_path = 'temp_input.xlsx'
+        import tempfile
+        # Save temp file to /tmp directory which is writable on Vercel
+        temp_path = os.path.join(tempfile.gettempdir(), 'temp_input.xlsx')
         file.save(temp_path)
         
         result_excel, df_tonghop, df_chamdiem, df_nhanvien = process_data(temp_path)
@@ -346,7 +347,13 @@ def update_config():
         if 'threshold_normal' in data: ws.cell(row=22, column=2, value=float(data['threshold_normal']))
         if 'ds_window_months' in data: ws.cell(row=23, column=2, value=float(data['ds_window_months']))
         
-        wb.save(CONFIG_PATH)
+        try:
+            wb.save(CONFIG_PATH)
+        except OSError as e:
+            if e.errno == 30: # Read-only file system
+                print("Warning: Cannot save config persistently on Vercel (Read-only filesystem)")
+            else:
+                raise e
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
