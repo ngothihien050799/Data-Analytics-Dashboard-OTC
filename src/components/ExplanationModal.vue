@@ -20,7 +20,6 @@ const emit = defineEmits(['close'])
 
       <div class="modal-body">
         <div class="section">
-        <div class="section">
           <h3>1. YÊU CẦU BẢNG "7_TongHop" — TỔNG HỢP THỐNG KÊ KHÁCH HÀNG</h3>
           <div class="explain-content">
             <h4>1. MỤC ĐÍCH</h4>
