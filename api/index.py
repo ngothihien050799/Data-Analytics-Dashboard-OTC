@@ -8,6 +8,7 @@ import io
 
 import openpyxl
 import json
+from excel_styler import style_excel
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -237,8 +238,12 @@ def process_data(input_file_path):
     # Save to Excel in memory
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_tonghop.to_excel(writer, sheet_name='7_TongHop', index=False)
-        df_chamdiem.to_excel(writer, sheet_name='Cham_diem_KH', index=False)
+        df_tonghop.to_excel(writer, sheet_name='7_TongHop', index=False, startrow=1)
+        df_chamdiem.to_excel(writer, sheet_name='Cham_diem_KH', index=False, startrow=1)
+        df_nhanvien.to_excel(writer, sheet_name='Tong_Hop_Nhan_Vien', index=False)
+        
+        # Apply visual styling
+        style_excel(writer, df_tonghop, df_chamdiem)
     
     output.seek(0)
     return output, df_tonghop, df_chamdiem, df_nhanvien
