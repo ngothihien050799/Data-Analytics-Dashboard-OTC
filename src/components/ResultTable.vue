@@ -61,7 +61,12 @@ const downloadExcel = () => {
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '-'
   if (typeof num === 'number') {
-    return Math.ceil(num).toLocaleString('vi-VN')
+    // If it's a score (usually between 0 and 1 or small decimals)
+    if (num > 0 && num <= 1) {
+      return num.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    }
+    // For larger numbers (like Revenue), round and format with separators
+    return Math.round(num).toLocaleString('vi-VN')
   }
   return num
 }

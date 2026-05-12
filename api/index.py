@@ -143,12 +143,12 @@ def process_data(input_file_path):
     ds_window_months = float(ws.cell(row=23, column=2).value or 6)
     
     # Load Input Data
-    xl = pd.ExcelFile(input_file_path, engine='openpyxl')
-    df_nhanvien = pd.read_excel(xl, '1_NhanVien', dtype=str)
-    df_kh = pd.read_excel(xl, '2_KHTrongTam')
-    df_orders = pd.read_excel(xl, '3_DonHang')
-    df_calls = pd.read_excel(xl, '4_Call')
-    df_freq = pd.read_excel(xl, '5_FrequencyF')
+    with pd.ExcelFile(input_file_path, engine='openpyxl') as xl:
+        df_nhanvien = pd.read_excel(xl, '1_NhanVien', dtype=str)
+        df_kh = pd.read_excel(xl, '2_KHTrongTam')
+        df_orders = pd.read_excel(xl, '3_DonHang')
+        df_calls = pd.read_excel(xl, '4_Call')
+        df_freq = pd.read_excel(xl, '5_FrequencyF')
     
     # Ensure date formats
     df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'])
@@ -373,7 +373,13 @@ def handle_process():
             'filename': 'Result_Thong_Ke.xlsx'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        error_details = traceback.format_exc()
+        print(error_details)
+        return jsonify({
+            'error': str(e),
+            'traceback': error_details
+        }), 500
 
 @app.route('/config', methods=['GET'])
 def get_config():
