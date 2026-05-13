@@ -172,7 +172,6 @@ const getAlertStyle = (col, val) => {
   if (val === null || val === undefined || val === "-" || val === "") return {};
 
   if (
-    col === "Call còn thiếu" ||
     col === "Call thiếu" ||
     col === "DS thiếu" ||
     col === "DS còn thiếu"
@@ -184,7 +183,7 @@ const getAlertStyle = (col, val) => {
     return { background: "rgba(16, 185, 129, 0.2)", color: "#6ee7b7" };
   }
 
-  if (col === "Số ngày chưa gặp") {
+  if (col === "Ngày chưa gặp") {
     const num = parseFloat(val);
     if (isNaN(num)) return {};
     if (num > 14)
@@ -204,7 +203,7 @@ const getGroupClass = (col) => {
     "Ngày mua gần 2",
     "Ngày mua gần 3",
   ];
-  const hoatdong = ["Số lần đã gặp", "Số ngày chưa gặp"];
+  const hoatdong = ["Số lần đã gặp", "Ngày chưa gặp"];
   const tonghop = ["Hạng KH", "DS tháng", "DS tháng trước"];
   const gap = ["Call thiếu", "DS mục tiêu", "DS thiếu"];
   const trend = [
@@ -237,7 +236,7 @@ const tonghopHeaders = computed(() => {
     "Ngày mua gần 2",
     "Ngày mua gần 3",
     "Số lần đã gặp",
-    "Số ngày chưa gặp",
+    "Ngày chưa gặp",
     "Hạng KH",
     "DS tháng",
     "DS tháng trước",
@@ -343,8 +342,8 @@ const tonghopHeaders = computed(() => {
             <th class="text-right group-tonghop">ĐIỂM TỔNG</th>
 
             <th class="text-right group-hoatdong">DS còn thiếu</th>
-            <th class="text-right group-hoatdong">Call còn thiếu</th>
-            <th class="text-right group-hoatdong">Số ngày chưa gặp</th>
+            <th class="text-right group-hoatdong">Call thiếu</th>
+            <th class="text-right group-hoatdong">Ngày chưa gặp</th>
             <th class="text-right group-hoatdong">Ngày gặp cuối</th>
 
             <th class="text-center group-chon">Chọn</th>
@@ -406,17 +405,17 @@ const tonghopHeaders = computed(() => {
             </td>
             <td
               class="text-right"
-              :style="getAlertStyle('Call còn thiếu', row['Call còn thiếu'])"
+              :style="getAlertStyle('Call thiếu', row['Call thiếu'])"
             >
-              {{ formatNumber(row["Call còn thiếu"]) }}
+              {{ formatNumber(row["Call thiếu"]) }}
             </td>
             <td
               class="text-right"
               :style="
-                getAlertStyle('Số ngày chưa gặp', row['Số ngày chưa gặp'])
+                getAlertStyle('Ngày chưa gặp', row['Ngày chưa gặp'])
               "
             >
-              {{ formatNumber(row["Số ngày chưa gặp"]) }}
+              {{ formatNumber(row["Ngày gặp cuối"] ? row["Ngày chưa gặp"] : "-") }}
             </td>
             <td class="text-right text-gray-300">
               {{ row["Ngày gặp cuối"] || "-" }}
@@ -783,8 +782,8 @@ th {
 }
 
 .col-tenkh {
-  min-width: 200px;
-  max-width: 300px;
+  min-width: 240px;
+  max-width: 400px;
   white-space: normal !important;
   line-height: 1.3;
   word-break: break-word;
@@ -792,7 +791,7 @@ th {
 }
 
 tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.01);
 }
 
 tbody tr:hover {

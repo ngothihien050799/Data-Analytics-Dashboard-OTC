@@ -362,7 +362,7 @@ def process_data(input_file_path):
     
     # Final cleanup for Cham_diem_KH
     df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'DS thiếu', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
-    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn thiếu', 'DS thiếu': 'DS còn thiếu'})
+    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'DS thiếu': 'DS còn thiếu', 'Số ngày chưa gặp': 'Ngày chưa gặp'})
     df_chamdiem['Chọn'] = np.nan
     
     df_chamdiem = df_chamdiem.sort_values(by='ĐIỂM TỔNG', ascending=False)
@@ -378,13 +378,14 @@ def process_data(input_file_path):
         'Tổng DS tháng trước': 'DS tháng trước',
         'Xu hướng mua': 'Xu hướng',
         'Dự báo ngày mua tiếp': 'Dự báo mua',
-        'Trạng thái hoạt động': 'Trạng thái'
+        'Trạng thái hoạt động': 'Trạng thái',
+        'Số ngày chưa gặp': 'Ngày chưa gặp'
     })
     
     tonghop_cols = [
         'Mã KH', 'Tên khách hàng', 
         'Ngày mua cuối', 'Số lần mua 6T', 'Tổng DS 6T', 'Ngày mua gần nhất', 'Ngày mua gần 2', 'Ngày mua gần 3', 
-        'Số lần đã gặp', 'Số ngày chưa gặp', 
+        'Số lần đã gặp', 'Ngày chưa gặp', 
         'Hạng KH', 'DS tháng', 'DS tháng trước',
         'Call thiếu', 'DS mục tiêu', 'DS thiếu',
         'Xu hướng', 'Chu kỳ TB', 'Dự báo mua', 'Trạng thái'
