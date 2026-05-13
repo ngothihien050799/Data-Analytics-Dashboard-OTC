@@ -265,6 +265,7 @@ def process_data(input_file_path):
     
     # Fill Nans for missing columns after merge
     df_tonghop['Tổng DS tháng'] = df_tonghop['Tổng DS tháng'].fillna(0)
+    df_tonghop['Tổng DS tháng trước'] = df_tonghop['Tổng DS tháng trước'].fillna(0)
     df_tonghop['Xu hướng mua'] = df_tonghop['Xu hướng mua'].fillna("Chưa mua")
     df_tonghop['Trạng thái hoạt động'] = df_tonghop['Trạng thái hoạt động'].fillna("Chưa mua")
     df_tonghop['Số lần mua trong 6 tháng'] = df_tonghop['Số lần mua trong 6 tháng'].fillna(0)
