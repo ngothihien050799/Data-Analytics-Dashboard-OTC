@@ -1,12 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": { "includeFiles": ["Cau_hinh.xlsx"] }
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "Cau_hinh.xlsx"
     }
-  ],
+  },
   "rewrites": [
     {
       "source": "/process",
