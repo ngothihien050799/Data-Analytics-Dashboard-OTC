@@ -70,8 +70,19 @@ const processFile = async () => {
   } catch (err) {
     console.error(err);
     status.value = "error";
-    errorMessage.value =
-      err.response?.data?.error || "Có lỗi xảy ra trong quá trình xử lý.";
+    const data = err.response?.data;
+    if (data && data.error) {
+      errorMessage.value = `${data.error}`;
+      if (data.traceback) {
+        console.error("Server Traceback:", data.traceback);
+      }
+    } else if (err.code === "ECONNABORTED") {
+      errorMessage.value = "Yêu cầu quá hạn. Vui lòng thử lại.";
+    } else if (!err.response) {
+      errorMessage.value = "Không thể kết nối đến server. Vui lòng kiểm tra server backend (app.py).";
+    } else {
+      errorMessage.value = "Có lỗi xảy ra trong quá trình xử lý.";
+    }
   } finally {
     loading.value = false;
   }

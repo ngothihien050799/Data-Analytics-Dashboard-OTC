@@ -159,7 +159,13 @@ def process_data(input_file_path):
     # --- Processing 7_TongHop ---
     
     # Order statistics
-    df_orders['Revenue'] = df_orders['Số lượng'] * df_orders['Đơn giá']
+    if 'Số lượng' not in df_orders.columns or 'Đơn giá' not in df_orders.columns:
+        df_orders['Revenue'] = 0
+    else:
+        df_orders['Số lượng'] = pd.to_numeric(df_orders['Số lượng'], errors='coerce').fillna(0)
+        df_orders['Đơn giá'] = pd.to_numeric(df_orders['Đơn giá'], errors='coerce').fillna(0)
+        df_orders['Revenue'] = df_orders['Số lượng'] * df_orders['Đơn giá']
+        
     df_orders_6m = df_orders[df_orders['Ngày đặt'] >= start_date_6m]
     
     current_month = today.month
@@ -218,10 +224,13 @@ def process_data(input_file_path):
     call_stats = []
     for makh, group in df_calls.groupby('Mã KH'):
         last_call = group['Thời gian checkin'].max()
+        # Handle cases where all calls have no timestamp (NaT)
+        days_since_call = (today - last_call).days if pd.notna(last_call) else None
+        
         call_stats.append({
             'Mã KH': makh,
             'Số lần đã gặp': len(group),
-            'Số ngày chưa gặp': (today - last_call).days,
+            'Số ngày chưa gặp': days_since_call,
             'Ngày gặp cuối': last_call.strftime('%d/%m/%Y') if pd.notna(last_call) else None
         })
     df_call_summary = pd.DataFrame(call_stats)
@@ -244,11 +253,14 @@ def process_data(input_file_path):
     if 'F' in df_freq.columns:
         df_freq['Call'] = df_freq[['Call', 'F']].max(axis=1)
         
-    df_freq_grouped = df_freq.groupby('Mã KHTC').agg({
-        'Doanh số KH': 'max',
-        'Call': 'sum'
-    }).reset_index().rename(columns={'Mã KHTC': 'Mã KH', 'Doanh số KH': 'DS mục tiêu', 'Call': 'Call mục tiêu'})
-    
+    if 'Mã KHTC' in df_freq.columns:
+        df_freq_grouped = df_freq.groupby('Mã KHTC').agg({
+            'Doanh số KH': 'max',
+            'Call': 'sum'
+        }).reset_index().rename(columns={'Mã KHTC': 'Mã KH', 'Doanh số KH': 'DS mục tiêu', 'Call': 'Call mục tiêu'})
+    else:
+        df_freq_grouped = pd.DataFrame(columns=['Mã KH', 'DS mục tiêu', 'Call mục tiêu'])
+        
     df_tonghop = df_tonghop.merge(df_freq_grouped, on='Mã KH', how='left')
     
     # Fill Nans for missing columns after merge
@@ -374,7 +386,8 @@ def handle_process():
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(error_details)  # Print to terminal for the user to see
+        print("ERROR IN /process:")
+        print(error_details)
         return jsonify({
             'error': str(e),
             'traceback': error_details
