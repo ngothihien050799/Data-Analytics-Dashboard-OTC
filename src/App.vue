@@ -79,7 +79,18 @@ const processFile = async () => {
     dataNhanvien.value = response.data.data_nhanvien;
     dataCasualOrders.value = response.data.data_casual_orders;
     dataCasualCalls.value = response.data.data_casual_calls;
-    stats.value = response.data.stats;
+    stats.value = {
+      total_customers: response.data.stats?.total_customers ?? 0,
+      customers_with_orders: response.data.stats?.customers_with_orders ?? 0,
+      customers_with_calls: response.data.stats?.customers_with_calls ?? 0,
+      customers_with_both: response.data.stats?.customers_with_both ?? 0,
+      customers_order_no_call: response.data.stats?.customers_order_no_call ?? 0,
+      total_revenue: response.data.stats?.total_revenue ?? 0,
+      total_orders: response.data.stats?.total_orders ?? 0,
+      total_calls: response.data.stats?.total_calls ?? 0,
+      casual_with_orders: response.data.stats?.casual_with_orders ?? 0,
+      casual_with_calls: response.data.stats?.casual_with_calls ?? 0,
+    };
     fileB64.value = response.data.file_b64;
     console.log("Dữ liệu nhận được:", response.data);
 
@@ -302,15 +313,7 @@ const processFile = async () => {
         </div>
       </div>
 
-      <div class="stats-card">
-        <div class="stats-icon bg-yellow-500/20 text-yellow-400">
-          <TrendingUp :size="24" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Tổng doanh số</p>
-          <h4 class="stats-value">{{ Math.round(stats.total_revenue).toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
+     
 
       <div class="stats-card">
         <div class="stats-icon bg-orange-500/20 text-orange-400">
@@ -349,6 +352,15 @@ const processFile = async () => {
         <div class="stats-info">
           <p class="stats-label">Vãng lai có Call</p>
           <h4 class="stats-value">{{ stats.casual_with_calls.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+       <div class="stats-card">
+        <div class="stats-icon bg-yellow-500/20 text-yellow-400">
+          <TrendingUp :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Tổng doanh số</p>
+          <h4 class="stats-value">{{ Math.round(stats.total_revenue).toLocaleString('vi-VN') }}</h4>
         </div>
       </div>
       </div>

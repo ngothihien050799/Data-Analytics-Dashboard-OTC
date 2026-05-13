@@ -149,6 +149,12 @@ def process_data(input_file_path):
         df_calls = pd.read_excel(xl, '4_Call')
         df_freq = pd.read_excel(xl, '5_FrequencyF')
     
+    # Enforce string type for IDs to ensure correct merging
+    for df in [df_nhanvien, df_kh, df_orders, df_calls, df_freq]:
+        for col in ['Mã KH', 'Mã KHTC']:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
+    
     # Ensure date formats - Optimized for yyyy-MM-dd HH:mm:ss
     df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce')
     df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'], errors='coerce')
@@ -258,7 +264,10 @@ def process_data(input_file_path):
     
     # FrequencyF merge (Group by Mã KHTC)
     if 'F' in df_freq.columns:
-        df_freq['Call'] = df_freq[['Call', 'F']].max(axis=1)
+        if 'Call' in df_freq.columns:
+            df_freq['Call'] = df_freq[['Call', 'F']].max(axis=1)
+        else:
+            df_freq['Call'] = df_freq['F']
         
     if 'Mã KHTC' in df_freq.columns:
         df_freq_grouped = df_freq.groupby('Mã KHTC').agg({
@@ -303,7 +312,7 @@ def process_data(input_file_path):
         d2 = row['Số ngày mua gần thứ 3']
         if pd.isna(r) or pd.isna(d1) or pd.isna(d2):
             return 0
-        avg_cycle = (d1 + d2) / 2
+        avg_cycle = math.ceil((d1 + d2) / 2)
         if avg_cycle == 0: return 0
         return min(1, r / avg_cycle)
     
@@ -358,15 +367,28 @@ def process_data(input_file_path):
     customers_with_orders = set(month_orders['Mã KH'].unique())
     customers_with_calls = set(month_calls['Mã KH'].unique())
     
+    def safe_int(val):
+        try:
+            return int(val) if pd.notna(val) else 0
+        except:
+            return 0
+
+    def safe_float(val):
+        try:
+            f = float(val)
+            return f if math.isfinite(f) else 0.0
+        except:
+            return 0.0
+
     stats = {
-        'total_customers': int(len(df_kh)),
-        'customers_with_orders': int(len(customers_with_orders)),
-        'customers_with_calls': int(len(customers_with_calls)),
-        'customers_with_both': int(len(customers_with_orders.intersection(customers_with_calls))),
-        'customers_order_no_call': int(len(customers_with_orders - customers_with_calls)),
-        'total_revenue': float(month_orders['Revenue'].sum()),
-        'total_orders': int(len(month_orders)),
-        'total_calls': int(len(month_calls))
+        'total_customers': safe_int(len(df_kh)),
+        'customers_with_orders': safe_int(len(customers_with_orders)),
+        'customers_with_calls': safe_int(len(customers_with_calls)),
+        'customers_with_both': safe_int(len(customers_with_orders.intersection(customers_with_calls))),
+        'customers_order_no_call': safe_int(len(customers_with_orders - customers_with_calls)),
+        'total_revenue': safe_float(month_orders['Revenue'].sum()),
+        'total_orders': safe_int(len(month_orders)),
+        'total_calls': safe_int(len(month_calls))
     }
 
     # --- Identify Casual Customers (Khách vãng lai) ---
@@ -412,8 +434,8 @@ def process_data(input_file_path):
     df_casual_calls = pd.DataFrame(casual_call_stats)
     
     # Add casual stats to the stats object
-    stats['casual_with_orders'] = int(len(df_casual_orders))
-    stats['casual_with_calls'] = int(len(df_casual_calls))
+    stats['casual_with_orders'] = safe_int(len(df_casual_orders))
+    stats['casual_with_calls'] = safe_int(len(df_casual_calls))
 
     output.seek(0)
     return output, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls
