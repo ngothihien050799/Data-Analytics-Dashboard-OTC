@@ -88,8 +88,11 @@ const processFile = async () => {
       total_revenue: response.data.stats?.total_revenue ?? 0,
       total_orders: response.data.stats?.total_orders ?? 0,
       total_calls: response.data.stats?.total_calls ?? 0,
+      total_calls_all_time: response.data.stats?.total_calls_all_time ?? 0,
       casual_with_orders: response.data.stats?.casual_with_orders ?? 0,
       casual_with_calls: response.data.stats?.casual_with_calls ?? 0,
+      month: response.data.stats?.month,
+      year: response.data.stats?.year,
     };
     fileB64.value = response.data.file_b64;
     console.log("Dữ liệu nhận được:", response.data);
@@ -260,7 +263,7 @@ const processFile = async () => {
     <!-- Monthly Statistics Section -->
     <div v-if="stats" class="stats-container mb-4 mt-4">
       <h3 class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2">
-        <TrendingUp :size="20" /> Thống Kê Hoạt Động Trong Tháng
+        <TrendingUp :size="20" /> Thống Kê Hoạt Động Tháng {{ stats.month }}/{{ stats.year }}
       </h3>
       <div class="stats-grid">
       <div class="stats-card">

@@ -175,6 +175,7 @@ def process_data(input_file_path):
     df_orders_6m = df_orders[df_orders['Ngày đặt'] >= start_date_6m]
     
     # Determine "Current Month" for statistics based on data
+    # Determine "Current Month" for statistics based on the latest data in the file
     if not df_orders.empty and pd.notna(df_orders['Ngày đặt'].max()):
         latest_date = df_orders['Ngày đặt'].max()
         current_month = latest_date.month
@@ -364,8 +365,15 @@ def process_data(input_file_path):
     month_orders = df_orders[(df_orders['Ngày đặt'].dt.month == current_month) & (df_orders['Ngày đặt'].dt.year == current_year)]
     month_calls = df_calls[(df_calls['Thời gian checkin'].dt.month == current_month) & (df_calls['Thời gian checkin'].dt.year == current_year)]
     
-    customers_with_orders = set(month_orders['Mã KH'].unique())
-    customers_with_calls = set(month_calls['Mã KH'].unique())
+    # Define target customers set for filtering
+    target_ids = set(df_kh['Mã KH'].astype(str).unique())
+    
+    # Filter monthly data to only include target customers
+    month_orders_target = month_orders[month_orders['Mã KH'].astype(str).isin(target_ids)]
+    month_calls_target = month_calls[month_calls['Mã KH'].astype(str).isin(target_ids)]
+
+    customers_with_orders = set(month_orders_target['Mã KH'].unique())
+    customers_with_calls = set(month_calls_target['Mã KH'].unique())
     
     def safe_int(val):
         try:
@@ -386,9 +394,12 @@ def process_data(input_file_path):
         'customers_with_calls': safe_int(len(customers_with_calls)),
         'customers_with_both': safe_int(len(customers_with_orders.intersection(customers_with_calls))),
         'customers_order_no_call': safe_int(len(customers_with_orders - customers_with_calls)),
-        'total_revenue': safe_float(month_orders['Revenue'].sum()),
-        'total_orders': safe_int(len(month_orders)),
-        'total_calls': safe_int(len(month_calls))
+        'total_revenue': safe_float(month_orders_target['Revenue'].sum()),
+        'total_orders': safe_int(len(month_orders_target.groupby(['Mã KH', 'Ngày đặt'])) if not month_orders_target.empty else 0),
+        'total_calls': safe_int(len(month_calls_target.groupby(['Mã KH', 'Thời gian checkin'])) if not month_calls_target.empty else 0),
+        'total_calls_all_time': safe_int(len(df_calls[df_calls['Mã KH'].astype(str).isin(target_ids)])),
+        'month': current_month,
+        'year': current_year
     }
 
     # --- Identify Casual Customers (Khách vãng lai) ---
@@ -405,12 +416,13 @@ def process_data(input_file_path):
                 ten_kh = group[col].iloc[0]
                 break
                 
+        last_date = group['Ngày đặt'].max()
         casual_order_stats.append({
             'Mã KH': makh,
             'Tên KH': ten_kh,
             'Tổng DS tháng': group['Revenue'].sum(),
             'Số đơn hàng': len(group),
-            'Ngày mua cuối': group['Ngày đặt'].max().strftime('%d/%m/%Y')
+            'Ngày mua cuối': last_date.strftime('%d/%m/%Y') if pd.notna(last_date) else None
         })
     df_casual_orders = pd.DataFrame(casual_order_stats)
     
