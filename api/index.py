@@ -82,7 +82,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                     elif val == 'Cảnh báo': cell.fill, cell.font = PatternFill(start_color='FEF08A', end_color='FEF08A', fill_type='solid'), Font(color='854D0E')
                     elif val == 'Ngủ đông': cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
                     elif val == 'Chưa mua': cell.fill, cell.font = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid'), Font(color='374151')
-                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn lại']:
+                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn thiếu']:
                     try:
                         num = float(val)
                         if num > 0: cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
@@ -300,7 +300,7 @@ def process_data(input_file_path):
     
     # Final cleanup for Cham_diem_KH
     df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
-    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn lại'})
+    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn thiếu'})
     df_chamdiem['Chọn'] = np.nan
     
     df_chamdiem = df_chamdiem.sort_values(by='ĐIỂM TỔNG', ascending=False)

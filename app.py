@@ -32,7 +32,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
         ("THÔNG TIN KH", 3, "EBF5FF", "2563EB"),
         ("ĐIỂM THÀNH PHẦN RFM", 6, "FFF1F2", "E11D48"),
         ("TỔNG HỢP", 1, "FFFBEB", "D97706"),
-        ("HOẠT ĐỘNG", 3, "F5F3FF", "7C3AED"),
+        ("HOẠT ĐỘNG", 4, "F5F3FF", "7C3AED"),
         ("CHỌN", 1, "F3F4F6", "4B5563")
     ]
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
@@ -81,7 +81,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                     elif val == 'Cảnh báo': cell.fill, cell.font = PatternFill(start_color='FEF08A', end_color='FEF08A', fill_type='solid'), Font(color='854D0E')
                     elif val == 'Ngủ đông': cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
                     elif val == 'Chưa mua': cell.fill, cell.font = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid'), Font(color='374151')
-                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn lại']:
+                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn thiếu', 'DS còn thiếu']:
                     try:
                         num = float(val)
                         if num > 0: cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
@@ -312,8 +312,8 @@ def process_data(input_file_path):
     )
     
     # Final cleanup for Cham_diem_KH
-    df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
-    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn lại'})
+    df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'DS thiếu', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
+    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn thiếu', 'DS thiếu': 'DS còn thiếu'})
     df_chamdiem['Chọn'] = np.nan
     
     df_chamdiem = df_chamdiem.sort_values(by='ĐIỂM TỔNG', ascending=False)
@@ -344,8 +344,72 @@ def process_data(input_file_path):
         # Apply visual styling
         style_excel(writer, df_tonghop, df_chamdiem)
     
+    # --- Calculate Monthly Statistics ---
+    month_orders = df_orders[(df_orders['Ngày đặt'].dt.month == current_month) & (df_orders['Ngày đặt'].dt.year == current_year)]
+    month_calls = df_calls[(df_calls['Thời gian checkin'].dt.month == current_month) & (df_calls['Thời gian checkin'].dt.year == current_year)]
+    
+    customers_with_orders = set(month_orders['Mã KH'].unique())
+    customers_with_calls = set(month_calls['Mã KH'].unique())
+    
+    stats = {
+        'total_customers': int(len(df_kh)),
+        'customers_with_orders': int(len(customers_with_orders)),
+        'customers_with_calls': int(len(customers_with_calls)),
+        'customers_with_both': int(len(customers_with_orders.intersection(customers_with_calls))),
+        'customers_order_no_call': int(len(customers_with_orders - customers_with_calls)),
+        'total_revenue': float(month_orders['Revenue'].sum()),
+        'total_orders': int(len(month_orders)),
+        'total_calls': int(len(month_calls))
+    }
+
+    # --- Identify Casual Customers (Khách vãng lai) ---
+    target_makh_set = set(df_kh['Mã KH'].astype(str).unique())
+    
+    # Casual Orders
+    month_orders_casual = month_orders[~month_orders['Mã KH'].astype(str).isin(target_makh_set)]
+    casual_order_stats = []
+    for makh, group in month_orders_casual.groupby('Mã KH'):
+        # Try to find a name in the group
+        ten_kh = "Không rõ"
+        for col in ['Tên KH', 'Tên khách hàng', 'Tên']:
+            if col in group.columns and not pd.isna(group[col].iloc[0]):
+                ten_kh = group[col].iloc[0]
+                break
+                
+        casual_order_stats.append({
+            'Mã KH': makh,
+            'Tên KH': ten_kh,
+            'Tổng DS tháng': group['Revenue'].sum(),
+            'Số đơn hàng': len(group),
+            'Ngày mua cuối': group['Ngày đặt'].max().strftime('%d/%m/%Y')
+        })
+    df_casual_orders = pd.DataFrame(casual_order_stats)
+    
+    # Casual Calls
+    month_calls_casual = month_calls[~month_calls['Mã KH'].astype(str).isin(target_makh_set)]
+    casual_call_stats = []
+    for makh, group in month_calls_casual.groupby('Mã KH'):
+        # Try to find a name in the group
+        ten_kh = "Không rõ"
+        for col in ['Tên KH', 'Tên khách hàng', 'Tên']:
+            if col in group.columns and not pd.isna(group[col].iloc[0]):
+                ten_kh = group[col].iloc[0]
+                break
+
+        casual_call_stats.append({
+            'Mã KH': makh,
+            'Tên KH': ten_kh,
+            'Số lần Call': len(group),
+            'Ngày Call cuối': group['Thời gian checkin'].max().strftime('%d/%m/%Y')
+        })
+    df_casual_calls = pd.DataFrame(casual_call_stats)
+    
+    # Add casual stats to the stats object
+    stats['casual_with_orders'] = int(len(df_casual_orders))
+    stats['casual_with_calls'] = int(len(df_casual_calls))
+
     output.seek(0)
-    return output, df_tonghop, df_chamdiem, df_nhanvien
+    return output, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls
 
 @app.route('/process', methods=['POST'])
 def handle_process():
@@ -362,7 +426,7 @@ def handle_process():
         temp_path = 'temp_input.xlsx'
         file.save(temp_path)
         
-        result_excel, df_tonghop, df_chamdiem, df_nhanvien = process_data(temp_path)
+        result_excel, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls = process_data(temp_path)
         
         os.remove(temp_path)
         
@@ -381,6 +445,9 @@ def handle_process():
             'data_tonghop': records_tonghop,
             'data_chamdiem': records_chamdiem,
             'data_nhanvien': records_nhanvien,
+            'data_casual_orders': df_casual_orders.to_dict(orient='records') if not df_casual_orders.empty else [],
+            'data_casual_calls': df_casual_calls.to_dict(orient='records') if not df_casual_calls.empty else [],
+            'stats': stats,
             'file_b64': excel_base64,
             'filename': 'Result_Thong_Ke.xlsx'
         })

@@ -12,6 +12,16 @@ import {
   User,
   BookOpen,
   ExternalLink,
+  Users,
+  ShoppingBag,
+  PhoneCall,
+  CheckCircle2,
+  TrendingUp,
+  Hash,
+  UserX,
+  ShoppingCart,
+  UserPlus,
+  UserMinus,
 } from "lucide-vue-next";
 import ConfigModal from "./components/ConfigModal.vue";
 import ResultTable from "./components/ResultTable.vue";
@@ -27,6 +37,9 @@ const errorMessage = ref("");
 const dataTonghop = ref(null);
 const dataChamdiem = ref(null);
 const dataNhanvien = ref(null);
+const dataCasualOrders = ref(null);
+const dataCasualCalls = ref(null);
+const stats = ref(null);
 const fileB64 = ref(null);
 
 const nvHeaders = ["MNV", "Tên", "Nhóm", "Phòng ban", "Vị trí"];
@@ -64,7 +77,11 @@ const processFile = async () => {
     dataTonghop.value = response.data.data_tonghop;
     dataChamdiem.value = response.data.data_chamdiem;
     dataNhanvien.value = response.data.data_nhanvien;
+    dataCasualOrders.value = response.data.data_casual_orders;
+    dataCasualCalls.value = response.data.data_casual_calls;
+    stats.value = response.data.stats;
     fileB64.value = response.data.file_b64;
+    console.log("Dữ liệu nhận được:", response.data);
 
     status.value = "success";
   } catch (err) {
@@ -229,10 +246,120 @@ const processFile = async () => {
       </div>
     </div>
 
+    <!-- Monthly Statistics Section -->
+    <div v-if="stats" class="stats-container mb-4 mt-4">
+      <h3 class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2">
+        <TrendingUp :size="20" /> Thống Kê Hoạt Động Trong Tháng
+      </h3>
+      <div class="stats-grid">
+      <div class="stats-card">
+        <div class="stats-icon bg-blue-500/20 text-blue-400">
+          <Users :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Tổng khách hàng</p>
+          <h4 class="stats-value">{{ stats.total_customers.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-green-500/20 text-green-400">
+          <ShoppingBag :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">KH có đơn</p>
+          <h4 class="stats-value">{{ stats.customers_with_orders.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-purple-500/20 text-purple-400">
+          <PhoneCall :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">KH có Call</p>
+          <h4 class="stats-value">{{ stats.customers_with_calls.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-indigo-500/20 text-indigo-400">
+          <CheckCircle2 :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Call có đơn</p>
+          <h4 class="stats-value">{{ stats.customers_with_both.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-red-500/20 text-red-400">
+          <UserX :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Đơn không Call</p>
+          <h4 class="stats-value">{{ stats.customers_order_no_call.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-yellow-500/20 text-yellow-400">
+          <TrendingUp :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Tổng doanh số</p>
+          <h4 class="stats-value">{{ Math.round(stats.total_revenue).toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-orange-500/20 text-orange-400">
+          <ShoppingCart :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Tổng đơn</p>
+          <h4 class="stats-value">{{ stats.total_orders.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-pink-500/20 text-pink-400">
+          <Hash :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Tổng Call</p>
+          <h4 class="stats-value">{{ stats.total_calls.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-cyan-500/20 text-cyan-400">
+          <UserPlus :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Vãng lai có đơn</p>
+          <h4 class="stats-value">{{ stats.casual_with_orders.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-icon bg-teal-500/20 text-teal-400">
+          <UserMinus :size="24" />
+        </div>
+        <div class="stats-info">
+          <p class="stats-label">Vãng lai có Call</p>
+          <h4 class="stats-value">{{ stats.casual_with_calls.toLocaleString('vi-VN') }}</h4>
+        </div>
+      </div>
+      </div>
+    </div>
+
     <ResultTable
       v-if="status === 'success' && dataTonghop && dataChamdiem && fileB64"
       :data-tonghop="dataTonghop"
       :data-chamdiem="dataChamdiem"
+      :data-casual-orders="dataCasualOrders"
+      :data-casual-calls="dataCasualCalls"
       :file-b64="fileB64"
     />
 
@@ -472,4 +599,82 @@ const processFile = async () => {
 .gap-2 {
   gap: 0.5rem;
 }
+
+/* Statistics Grid Styles */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stats-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.stats-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stats-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.stats-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Color utilities if not using tailwind properly */
+.bg-blue-500\/20 { background: rgba(59, 130, 246, 0.2); }
+.text-blue-400 { color: #60a5fa; }
+.bg-green-500\/20 { background: rgba(16, 185, 129, 0.2); }
+.text-green-400 { color: #4ade80; }
+.bg-purple-500\/20 { background: rgba(168, 85, 247, 0.2); }
+.text-purple-400 { color: #c084fc; }
+.bg-indigo-500\/20 { background: rgba(99, 102, 241, 0.2); }
+.text-indigo-400 { color: #818cf8; }
+.bg-red-500\/20 { background: rgba(239, 68, 68, 0.2); }
+.text-red-400 { color: #f87171; }
+.bg-yellow-500\/20 { background: rgba(234, 179, 8, 0.2); }
+.text-yellow-400 { color: #facc15; }
+.bg-pink-500\/20 { background: rgba(236, 72, 153, 0.2); }
+.text-pink-400 { color: #f472b6; }
+.bg-orange-500\/20 { background: rgba(249, 115, 22, 0.2); }
+.text-orange-400 { color: #fb923c; }
+.bg-cyan-500\/20 { background: rgba(6, 182, 212, 0.2); }
+.text-cyan-400 { color: #22d3ee; }
+.bg-teal-500\/20 { background: rgba(20, 184, 166, 0.2); }
+.text-teal-400 { color: #2dd4bf; }
 </style>
