@@ -127,7 +127,7 @@ const processFile = async () => {
         <div class="logo">
           <img src="/logo.png" alt="CPC1HN Logo" class="app-logo" />
         </div>
-        <h1>Data Analytics Dashboard</h1>
+        <h3>Data Analytics Dashboard</h3>
       </div>
       <div class="header-right">
         <!-- <a href="https://drive.google.com/drive/folders/1FJCHDyb4mM7uAADZzVy6fzuKzU4pJFcR" target="_blank" class="icon-btn btn-secondary" title="Mở tài liệu hướng dẫn">
@@ -139,7 +139,7 @@ const processFile = async () => {
           @click="showExplanation = true"
           title="Giải thích tính toán"
         >
-          <BookOpen size="20" />
+          <BookOpen size="16" />
           <span>Hướng dẫn</span>
         </button>
         <button
@@ -147,7 +147,7 @@ const processFile = async () => {
           @click="showConfig = true"
           title="Cài đặt cấu hình"
         >
-          <Settings size="20" />
+          <Settings size="16" />
           <span>Cài đặt</span>
         </button>
       </div>
@@ -156,7 +156,7 @@ const processFile = async () => {
     <main class="glass-card">
       <div
         class="upload-zone"
-        :class="{ active: isDragging }"
+        :class="{ active: isDragging, 'has-file': file }"
         @dragover.prevent="isDragging = true"
         @dragleave.prevent="isDragging = false"
         @drop.prevent="onDrop"
@@ -170,61 +170,34 @@ const processFile = async () => {
           @change="onFileChange"
         />
 
-        <div v-if="!file" class="upload-prompt">
-          <Upload :size="48" color="#6366f1" />
-          <p>Kéo thả file Excel vào đây hoặc <span>chọn từ máy tính</span></p>
-          <p class="hint">Hỗ trợ .xlsx, .xls (File Thống kê tổng)</p>
+        <div v-if="!file" class="upload-prompt-compact">
+          <Upload :size="24" color="#6366f1" />
+          <p><span>Chọn file Excel</span> hoặc kéo thả tại đây</p>
         </div>
 
-        <div v-else class="file-selected">
-          <FileSpreadsheet :size="48" color="#10b981" />
-          <p class="filename">{{ file.name }}</p>
-          <p class="filesize">{{ (file.size / 1024).toFixed(2) }} KB</p>
+        <div v-else class="file-selected-compact">
+          <FileSpreadsheet :size="24" color="#10b981" />
+          <p class="filename-compact">{{ file.name }}</p>
+          <button class="btn-process-mini" @click.stop="processFile" :disabled="loading">
+             <template v-if="loading">
+              <Loader2 class="animate-spin" :size="16" />
+            </template>
+            <template v-else>
+              <Download v-if="status === 'success'" :size="16" />
+              <span>{{ status === 'success' ? 'Xử lý lại' : 'Bắt đầu' }}</span>
+            </template>
+          </button>
         </div>
       </div>
 
-      <div class="actions">
-        <!-- <a
-          href="https://docs.google.com/spreadsheets/d/1YrSaIufQJzRe_5CuXSFc4EJDzXKzYTS_39z2-HwWOVI/edit?usp=sharing"
-          target="_blank"
-          class="icon-btn btn-secondary"
-          title="Tải file dữ liệu mẫu"
-          style="
-            text-decoration: none;
-            padding: 0.75rem 2rem;
-            font-size: 1rem;
-            border-radius: 12px;
-            height: auto;
-            font-weight: 600;
-          "
-        >
-          <FileSpreadsheet :size="20" />
-          <span>Tải mẫu</span>
-        </a> -->
-        <button
-          class="btn-primary"
-          :disabled="!file || loading"
-          @click="processFile"
-        >
-          <template v-if="loading">
-            <Loader2 class="animate-spin" />
-            Đang xử lý...
-          </template>
-          <template v-else>
-            <Download v-if="status === 'success'" />
-            <span v-if="status === 'success'">Xử lý lại</span>
-            <span v-else>Bắt đầu xử lý</span>
-          </template>
-        </button>
-      </div>
-
-      <div v-if="status === 'success'" class="feedback success">
-        <CheckCircle color="#10b981" />
+      <!-- Compact feedback area -->
+      <div v-if="status === 'success'" class="feedback-compact success">
+        <CheckCircle :size="14" color="#10b981" />
         <p>Xử lý thành công! Dữ liệu đã sẵn sàng.</p>
       </div>
 
-      <div v-if="status === 'error'" class="feedback error">
-        <AlertCircle color="#ef4444" />
+      <div v-if="status === 'error'" class="feedback-compact error">
+        <AlertCircle :size="14" color="#ef4444" />
         <p>{{ errorMessage }}</p>
       </div>
     </main>
@@ -268,7 +241,7 @@ const processFile = async () => {
       <div class="stats-grid">
       <div class="stats-card">
         <div class="stats-icon bg-blue-500/20 text-blue-400">
-          <Users :size="24" />
+          <Users :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Tổng khách hàng</p>
@@ -278,7 +251,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-green-500/20 text-green-400">
-          <ShoppingBag :size="24" />
+          <ShoppingBag :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">KH có đơn</p>
@@ -288,7 +261,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-purple-500/20 text-purple-400">
-          <PhoneCall :size="24" />
+          <PhoneCall :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">KH có Call</p>
@@ -298,7 +271,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-indigo-500/20 text-indigo-400">
-          <CheckCircle2 :size="24" />
+          <CheckCircle2 :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Call có đơn</p>
@@ -308,7 +281,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-red-500/20 text-red-400">
-          <UserX :size="24" />
+          <UserX :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Đơn không Call</p>
@@ -320,7 +293,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-orange-500/20 text-orange-400">
-          <ShoppingCart :size="24" />
+          <ShoppingCart :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Tổng đơn</p>
@@ -330,7 +303,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-pink-500/20 text-pink-400">
-          <Hash :size="24" />
+          <Hash :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Tổng Call</p>
@@ -340,7 +313,7 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-cyan-500/20 text-cyan-400">
-          <UserPlus :size="24" />
+          <UserPlus :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Vãng lai có đơn</p>
@@ -350,16 +323,16 @@ const processFile = async () => {
 
       <div class="stats-card">
         <div class="stats-icon bg-teal-500/20 text-teal-400">
-          <UserMinus :size="24" />
+          <UserMinus :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Vãng lai có Call</p>
           <h4 class="stats-value">{{ stats.casual_with_calls.toLocaleString('vi-VN') }}</h4>
         </div>
       </div>
-       <div class="stats-card">
+       <div class="stats-card stats-card-wide">
         <div class="stats-icon bg-yellow-500/20 text-yellow-400">
-          <TrendingUp :size="24" />
+          <TrendingUp :size="20" />
         </div>
         <div class="stats-info">
           <p class="stats-label">Tổng doanh số</p>
@@ -412,7 +385,7 @@ const processFile = async () => {
 
 <style scoped>
 .app-logo {
-  width: 48px;
+  width: 32px;
   height: auto;
   object-fit: contain;
 }
@@ -421,7 +394,18 @@ const processFile = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.app-header h1,
+.app-header h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  font-weight: 700;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .header-left {
@@ -438,12 +422,13 @@ const processFile = async () => {
 .icon-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
   color: #e2e8f0;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -465,36 +450,96 @@ const processFile = async () => {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.upload-prompt span {
-  color: #6366f1;
-  text-decoration: underline;
-  font-weight: 600;
+.upload-zone {
+  border: 2px dashed rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: rgba(15, 23, 42, 0.2);
 }
 
-.hint {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-top: 1rem;
+.upload-zone:hover, .upload-zone.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
 }
 
-.filename {
-  font-size: 1.25rem;
+.upload-prompt-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.upload-prompt-compact p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.file-selected-compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.filename-compact {
+  margin: 0;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #e2e8f0;
-  margin-top: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  text-align: left;
 }
 
-.filesize {
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-
-.actions {
-  margin-top: 2rem;
+.btn-process-mini {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
   display: flex;
-  gap: 1rem;
-  justify-content: center;
-  align-items: stretch;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-process-mini:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.btn-process-mini:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback-compact {
+  
+  padding: 0 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.feedback-compact.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.feedback-compact.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .feedback {
@@ -618,15 +663,15 @@ const processFile = async () => {
 /* Statistics Grid Styles */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
 }
 
 .stats-card {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 1.25rem;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -640,10 +685,27 @@ const processFile = async () => {
   background: rgba(15, 23, 42, 0.8);
 }
 
+.stats-card-wide {
+  grid-column: span 2;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.stats-card-wide .stats-value {
+  font-size: 1.5rem;
+  color: #818cf8;
+}
+
+.stats-card-wide .stats-label {
+  font-size: 0.9rem;
+  color: #c7d2fe;
+}
+
 .stats-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,10 +727,10 @@ const processFile = async () => {
 }
 
 .stats-value {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #f8fafc;
-  margin: 0.25rem 0 0 0;
+  margin: 0.15rem 0 0 0;
 }
 
 /* Color utilities if not using tailwind properly */

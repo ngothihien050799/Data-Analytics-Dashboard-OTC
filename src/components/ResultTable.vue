@@ -9,6 +9,8 @@ import {
   LayoutList,
   UserPlus,
   UserMinus,
+  Maximize,
+  Minimize,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -37,7 +39,17 @@ const props = defineProps({
 const activeTab = ref("chamdiem"); // 'chamdiem' or 'tonghop' or 'casual_orders' or 'casual_calls'
 const searchQuery = ref("");
 const currentPage = ref(1);
-const itemsPerPage = ref(50);
+const itemsPerPage = ref(200);
+const isFullscreen = ref(false);
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value;
+  if (isFullscreen.value) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
+};
 
 const currentData = computed(() => {
   if (activeTab.value === "chamdiem") return props.dataChamdiem;
@@ -186,20 +198,20 @@ const getAlertStyle = (col, val) => {
 const getGroupClass = (col) => {
   const history = [
     "Ngày mua cuối",
-    "Số lần mua trong 6 tháng",
-    "Tổng doanh số 6 tháng",
-    "Số ngày mua gần nhất",
-    "Số ngày mua gần thứ 2",
-    "Số ngày mua gần thứ 3",
+    "Số lần mua 6T",
+    "Tổng DS 6T",
+    "Ngày mua gần nhất",
+    "Ngày mua gần 2",
+    "Ngày mua gần 3",
   ];
   const hoatdong = ["Số lần đã gặp", "Số ngày chưa gặp"];
-  const tonghop = ["Hạng KH", "Tổng DS tháng", "Tổng DS tháng trước"];
+  const tonghop = ["Hạng KH", "DS tháng", "DS tháng trước"];
   const gap = ["Call thiếu", "DS mục tiêu", "DS thiếu"];
   const trend = [
-    "Xu hướng mua",
+    "Xu hướng",
     "Chu kỳ TB",
-    "Dự báo ngày mua tiếp",
-    "Trạng thái hoạt động",
+    "Dự báo mua",
+    "Trạng thái",
   ];
 
   if (["Mã KH", "Tên khách hàng"].includes(col)) return "group-kh";
@@ -219,29 +231,29 @@ const tonghopHeaders = computed(() => {
     "Mã KH",
     "Tên khách hàng",
     "Ngày mua cuối",
-    "Số lần mua trong 6 tháng",
-    "Tổng doanh số 6 tháng",
-    "Số ngày mua gần nhất",
-    "Số ngày mua gần thứ 2",
-    "Số ngày mua gần thứ 3",
+    "Số lần mua 6T",
+    "Tổng DS 6T",
+    "Ngày mua gần nhất",
+    "Ngày mua gần 2",
+    "Ngày mua gần 3",
     "Số lần đã gặp",
     "Số ngày chưa gặp",
     "Hạng KH",
-    "Tổng DS tháng",
-    "Tổng DS tháng trước",
+    "DS tháng",
+    "DS tháng trước",
     "Call thiếu",
     "DS mục tiêu",
     "DS thiếu",
-    "Xu hướng mua",
+    "Xu hướng",
     "Chu kỳ TB",
-    "Dự báo ngày mua tiếp",
-    "Trạng thái hoạt động",
+    "Dự báo mua",
+    "Trạng thái",
   ];
 });
 </script>
 
 <template>
-  <div class="result-container glass-card">
+  <div class="result-container glass-card" :class="{ 'is-fullscreen': isFullscreen }">
     <div class="tabs-wrapper">
       <div class="tabs">
         <button
@@ -273,13 +285,19 @@ const tonghopHeaders = computed(() => {
           <UserMinus :size="18" /> Vãng Lai (Call)
         </button>
       </div>
-      <button
-        class="btn-primary flex items-center gap-2 download-btn"
-        @click="downloadExcel"
-      >
-        <Download :size="18" />
-        Tải xuống Excel
-      </button>
+      <div class="header-actions">
+        <button class="icon-btn btn-fullscreen" @click="toggleFullscreen" :title="isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'">
+          <Minimize v-if="isFullscreen" :size="18" />
+          <Maximize v-else :size="18" />
+        </button>
+        <button
+          class="btn-primary flex items-center gap-2 download-btn"
+          @click="downloadExcel"
+        >
+          <Download :size="18" />
+          Tải xuống Excel
+        </button>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -311,8 +329,8 @@ const tonghopHeaders = computed(() => {
             <th colspan="1" class="text-center group-chon">CHỌN</th>
           </tr>
           <tr class="sub-header">
-            <th class="group-kh">Mã KH</th>
-            <th class="group-kh">Tên KH</th>
+            <th class="group-kh col-makh">Mã KH</th>
+            <th class="group-kh col-tenkh">Tên KH</th>
             <th class="group-kh">Hạng KH</th>
 
             <th class="text-right group-rfm">Điểm R</th>
@@ -339,10 +357,10 @@ const tonghopHeaders = computed(() => {
             </td>
           </tr>
           <tr v-for="row in paginatedData" :key="row['Mã KH']">
-            <td>
+            <td class="col-makh">
               <span class="font-mono text-sm">{{ row["Mã KH"] }}</span>
             </td>
-            <td class="font-medium text-white">{{ row["Tên KH"] }}</td>
+            <td class="font-medium text-white col-tenkh">{{ row["Tên KH"] }}</td>
             <td>
               <span class="badge" :class="getRankColor(row['Hạng KH'])">
                 <Award
@@ -435,7 +453,7 @@ const tonghopHeaders = computed(() => {
               v-for="col in tonghopHeaders"
               :key="col"
               class="text-center"
-              :class="getGroupClass(col)"
+              :class="[getGroupClass(col), { 'col-makh': col === 'Mã KH', 'col-tenkh': col === 'Tên khách hàng' }]"
             >
               {{ col }}
             </th>
@@ -451,7 +469,7 @@ const tonghopHeaders = computed(() => {
             <td
               v-for="col in tonghopHeaders"
               :key="col"
-              :class="{ 'text-right': typeof row[col] === 'number' }"
+              :class="[{ 'text-right': typeof row[col] === 'number', 'col-makh': col === 'Mã KH', 'col-tenkh': col === 'Tên khách hàng' }]"
               :style="getAlertStyle(col, row[col])"
             >
               <span
@@ -461,6 +479,9 @@ const tonghopHeaders = computed(() => {
                 >{{ row[col] }}</span
               >
               <span v-else-if="col === 'Mã KH'" class="font-mono text-sm">{{
+                row[col]
+              }}</span>
+              <span v-else-if="col === 'Tên khách hàng'" class="font-medium text-white">{{
                 row[col]
               }}</span>
               <span v-else>{{ formatNumber(row[col]) }}</span>
@@ -476,8 +497,8 @@ const tonghopHeaders = computed(() => {
             <th colspan="5" class="text-center group-gap">DANH SÁCH KHÁCH VÃNG LAI CÓ ĐƠN (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)</th>
           </tr>
           <tr class="sub-header">
-            <th class="text-center group-kh">Mã KH</th>
-            <th class="text-left group-kh">Tên KH</th>
+            <th class="text-center group-kh col-makh">Mã KH</th>
+            <th class="text-left group-kh col-tenkh">Tên KH</th>
             <th class="text-right group-gap">Tổng DS tháng</th>
             <th class="text-right group-gap">Số đơn hàng</th>
             <th class="text-center group-gap">Ngày mua cuối</th>
@@ -488,8 +509,8 @@ const tonghopHeaders = computed(() => {
             <td colspan="5" class="empty-state">Không có khách vãng lai phát sinh đơn hàng</td>
           </tr>
           <tr v-for="(row, idx) in paginatedData" :key="idx">
-            <td class="font-mono text-sm text-center">{{ row['Mã KH'] }}</td>
-            <td class="font-medium text-white">{{ row['Tên KH'] }}</td>
+            <td class="font-mono text-sm text-center col-makh">{{ row['Mã KH'] }}</td>
+            <td class="font-medium text-white col-tenkh">{{ row['Tên KH'] }}</td>
             <td class="text-right font-bold text-indigo-400">{{ formatNumber(row['Tổng DS tháng']) }}</td>
             <td class="text-right">{{ row['Số đơn hàng'] }}</td>
             <td class="text-center text-gray-300">{{ row['Ngày mua cuối'] }}</td>
@@ -504,8 +525,8 @@ const tonghopHeaders = computed(() => {
             <th colspan="4" class="text-center group-hoatdong">DANH SÁCH KHÁCH VÃNG LAI CÓ CALL (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)</th>
           </tr>
           <tr class="sub-header">
-            <th class="text-center group-kh">Mã KH</th>
-            <th class="text-left group-kh">Tên KH</th>
+            <th class="text-center group-kh col-makh">Mã KH</th>
+            <th class="text-left group-kh col-tenkh">Tên KH</th>
             <th class="text-right group-hoatdong">Số lần Call</th>
             <th class="text-center group-hoatdong">Ngày Call cuối</th>
           </tr>
@@ -515,8 +536,8 @@ const tonghopHeaders = computed(() => {
             <td colspan="4" class="empty-state">Không có khách vãng lai phát sinh Call</td>
           </tr>
           <tr v-for="(row, idx) in paginatedData" :key="idx">
-            <td class="font-mono text-sm text-center">{{ row['Mã KH'] }}</td>
-            <td class="font-medium text-white">{{ row['Tên KH'] }}</td>
+            <td class="font-mono text-sm text-center col-makh">{{ row['Mã KH'] }}</td>
+            <td class="font-medium text-white col-tenkh">{{ row['Tên KH'] }}</td>
             <td class="text-right font-bold text-orange-400">{{ row['Số lần Call'] }}</td>
             <td class="text-center text-gray-300">{{ row['Ngày Call cuối'] }}</td>
           </tr>
@@ -532,6 +553,8 @@ const tonghopHeaders = computed(() => {
           <option :value="20">20 dòng</option>
           <option :value="50">50 dòng</option>
           <option :value="100">100 dòng</option>
+          <option :value="200">200 dòng</option>
+          <option :value="500">500 dòng</option>
         </select>
       </div>
 
@@ -561,7 +584,7 @@ const tonghopHeaders = computed(() => {
 <style scoped>
 .result-container {
   margin-top: 2rem;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -678,7 +701,7 @@ table {
 
 th,
 td {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.6rem;
   white-space: nowrap;
 }
 
@@ -725,7 +748,7 @@ td {
 .sub-header th {
   background: #0f172a;
   color: #94a3b8;
-  font-size: 0.8rem;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   font-weight: 600;
@@ -736,19 +759,44 @@ td {
 .table-tonghop th {
   background: #0f172a;
   color: #94a3b8;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 600;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 td {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.9rem;
+  font-size: 13px;
   border-right: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 0.4rem 0.5rem;
+}
+
+th {
+  white-space: nowrap;
+}
+
+.col-makh {
+  width: 90px;
+  min-width: 90px;
+  white-space: nowrap;
+  text-align: center !important;
+}
+
+.col-tenkh {
+  min-width: 200px;
+  max-width: 300px;
+  white-space: normal !important;
+  line-height: 1.3;
+  word-break: break-word;
+  text-align: left !important;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(99, 102, 241, 0.08) !important;
 }
 
 .highlight-col {
@@ -783,7 +831,7 @@ tbody tr:hover {
   font-weight: 700;
 }
 .text-sm {
-  font-size: 0.85rem;
+  font-size: 13px;
 }
 .text-white {
   color: #f8fafc;
@@ -802,6 +850,58 @@ tbody tr:hover {
 }
 .gap-2 {
   gap: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-fullscreen-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-fullscreen-header:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.btn-fullscreen {
+  padding: 0.4rem;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+}
+
+.result-container.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  border-radius: 0;
+  margin: 0;
+  padding: 1rem;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.is-fullscreen .table-wrapper {
+  flex: 1;
+  max-height: none;
+  overflow-y: auto;
+  margin-bottom: 0.5rem;
+}
+
+.is-fullscreen .pagination-container {
+  padding-bottom: 0.5rem;
 }
 
 .row-checkbox {

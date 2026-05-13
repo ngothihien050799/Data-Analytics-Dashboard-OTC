@@ -59,8 +59,25 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                 ws.cell(row=1, column=c).border = thin_border
             col_idx += span
         ws.freeze_panes = "A3"
+        
+        # Auto-fit column widths based on content
         for col in range(1, len(df.columns) + 1):
-            ws.column_dimensions[get_column_letter(col)].width = 15
+            max_length = 0
+            column_letter = get_column_letter(col)
+            
+            # Check header length
+            header_val = str(ws.cell(row=2, column=col).value or "")
+            max_length = len(header_val)
+            
+            # Check data length (up to 100 rows for performance)
+            for row in range(3, min(len(df) + 3, 103)):
+                cell_val = str(ws.cell(row=row, column=col).value or "")
+                if len(cell_val) > max_length:
+                    max_length = len(cell_val)
+            
+            adjusted_width = (max_length + 2) * 1.2
+            ws.column_dimensions[column_letter].width = min(max(adjusted_width, 10), 40)
+
         for r in range(3, len(df) + 3):
             for c in range(1, len(df.columns) + 1):
                 cell = ws.cell(row=r, column=c)
@@ -142,7 +159,24 @@ def process_data(input_file_path):
     ds_window_months = float(ws.cell(row=23, column=2).value or 6)
     
     # Load Input Data
-    with pd.ExcelFile(input_file_path, engine='openpyxl') as xl:
+    try:
+        # Try openpyxl first (for .xlsx)
+        xl = pd.ExcelFile(input_file_path, engine='openpyxl')
+    except Exception:
+        try:
+            # Fallback to xlrd (for .xls)
+            xl = pd.ExcelFile(input_file_path, engine='xlrd')
+        except ImportError:
+            raise ImportError("Thiếu thư viện 'xlrd' để đọc file .xls. Vui lòng chạy: pip install xlrd")
+        except Exception as e2:
+            raise ValueError(f"Lỗi khi đọc file Excel: {str(e2)}")
+
+    with xl:
+        required_sheets = ['1_NhanVien', '2_KHTrongTam', '3_DonHang', '4_Call', '5_FrequencyF']
+        missing_sheets = [s for s in required_sheets if s not in xl.sheet_names]
+        if missing_sheets:
+            raise ValueError(f"File Excel thiếu các sheet bắt buộc: {', '.join(missing_sheets)}")
+
         df_nhanvien = pd.read_excel(xl, '1_NhanVien', dtype=str)
         df_kh = pd.read_excel(xl, '2_KHTrongTam')
         df_orders = pd.read_excel(xl, '3_DonHang')
@@ -154,6 +188,9 @@ def process_data(input_file_path):
         for col in ['Mã KH', 'Mã KHTC']:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip()
+    
+    # Filter out customers with ID length > 9 (as requested)
+    df_kh = df_kh[df_kh['Mã KH'].str.len() <= 9]
     
     # Ensure date formats - Optimized for yyyy-MM-dd HH:mm:ss (standard ISO)
     df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce')
@@ -336,13 +373,26 @@ def process_data(input_file_path):
     df_chamdiem = df_chamdiem.sort_values(by='ĐIỂM TỔNG', ascending=False)
     
     # Re-order and rename df_tonghop according to user request
+    df_tonghop = df_tonghop.rename(columns={
+        'Số lần mua trong 6 tháng': 'Số lần mua 6T',
+        'Tổng doanh số 6 tháng': 'Tổng DS 6T',
+        'Số ngày mua gần nhất': 'Ngày mua gần nhất',
+        'Số ngày mua gần thứ 2': 'Ngày mua gần 2',
+        'Số ngày mua gần thứ 3': 'Ngày mua gần 3',
+        'Tổng DS tháng': 'DS tháng',
+        'Tổng DS tháng trước': 'DS tháng trước',
+        'Xu hướng mua': 'Xu hướng',
+        'Dự báo ngày mua tiếp': 'Dự báo mua',
+        'Trạng thái hoạt động': 'Trạng thái'
+    })
+    
     tonghop_cols = [
         'Mã KH', 'Tên khách hàng', 
-        'Ngày mua cuối', 'Số lần mua trong 6 tháng', 'Tổng doanh số 6 tháng', 'Số ngày mua gần nhất', 'Số ngày mua gần thứ 2', 'Số ngày mua gần thứ 3', 
+        'Ngày mua cuối', 'Số lần mua 6T', 'Tổng DS 6T', 'Ngày mua gần nhất', 'Ngày mua gần 2', 'Ngày mua gần 3', 
         'Số lần đã gặp', 'Số ngày chưa gặp', 
-        'Hạng KH', 'Tổng DS tháng', 'Tổng DS tháng trước',
+        'Hạng KH', 'DS tháng', 'DS tháng trước',
         'Call thiếu', 'DS mục tiêu', 'DS thiếu',
-        'Xu hướng mua', 'Chu kỳ TB', 'Dự báo ngày mua tiếp', 'Trạng thái hoạt động'
+        'Xu hướng', 'Chu kỳ TB', 'Dự báo mua', 'Trạng thái'
     ]
     df_tonghop = df_tonghop[tonghop_cols].copy()
     
@@ -499,7 +549,12 @@ def handle_process():
         import traceback
         error_details = traceback.format_exc()
         print("ERROR IN /process:")
-        print(error_details)
+        # Use repr() or encode/decode to avoid UnicodeEncodeError in Windows console
+        try:
+            print(error_details)
+        except UnicodeEncodeError:
+            print(error_details.encode('ascii', 'replace').decode())
+            
         return jsonify({
             'error': str(e),
             'traceback': error_details

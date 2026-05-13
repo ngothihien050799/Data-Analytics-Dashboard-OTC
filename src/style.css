@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -37,7 +41,7 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
-  padding: 3rem;
+  padding: 1rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;
 }
@@ -77,7 +81,7 @@ body {
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 4rem 2rem;
-  margin: 2rem 0;
+  margin: 1rem 0;
   cursor: pointer;
   transition: all 0.3s;
   position: relative;
@@ -127,7 +131,9 @@ h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .features {

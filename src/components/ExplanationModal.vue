@@ -74,7 +74,7 @@ const emit = defineEmits(["close"]);
                 có đơn) trong 6 tháng gần nhất
               </li>
               <li>
-                <strong>Tổng doanh số 6 tháng (VNĐ):</strong> SUM(Số lượng × Đơn
+                <strong>Số lần mua trong 6 tháng (VNĐ):</strong> SUM(Số lượng × Đơn
                 giá) trong 6 tháng gần nhất
               </li>
               <li>
