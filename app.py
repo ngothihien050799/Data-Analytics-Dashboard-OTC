@@ -155,9 +155,9 @@ def process_data(input_file_path):
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip()
     
-    # Ensure date formats - Optimized for yyyy-MM-dd HH:mm:ss
-    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce')
-    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'], errors='coerce')
+    # Ensure date formats - Optimized for Vietnamese DD/MM/YYYY
+    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce', dayfirst=True)
+    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'], errors='coerce', dayfirst=True)
     
     # Calculate 6-month window
     start_date_6m = today - timedelta(days=30*ds_window_months)
@@ -560,6 +560,10 @@ def update_config():
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/ping')
+def ping():
+    return 'pong'
 
 @app.route('/')
 def serve_index():
