@@ -429,8 +429,9 @@ def handle_process():
     
     try:
         import base64
-        # Save temp file
-        temp_path = 'temp_input.xlsx'
+        import tempfile
+        # Save temp file to /tmp directory which is writable on Vercel
+        temp_path = os.path.join(tempfile.gettempdir(), 'temp_input.xlsx')
         file.save(temp_path)
         
         result_excel, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls = process_data(temp_path)
@@ -441,6 +442,8 @@ def handle_process():
         df_tonghop = df_tonghop.astype(object).where(pd.notnull(df_tonghop), None)
         df_chamdiem = df_chamdiem.astype(object).where(pd.notnull(df_chamdiem), None)
         df_nhanvien = df_nhanvien.astype(object).where(pd.notnull(df_nhanvien), None)
+        df_casual_orders = df_casual_orders.astype(object).where(pd.notnull(df_casual_orders), None)
+        df_casual_calls = df_casual_calls.astype(object).where(pd.notnull(df_casual_calls), None)
         
         records_tonghop = df_tonghop.to_dict(orient='records')
         records_chamdiem = df_chamdiem.to_dict(orient='records')
