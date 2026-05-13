@@ -149,9 +149,9 @@ def process_data(input_file_path):
         df_calls = pd.read_excel(xl, '4_Call')
         df_freq = pd.read_excel(xl, '5_FrequencyF')
     
-    # Ensure date formats
-    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'])
-    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'])
+    # Ensure date formats - Optimized for yyyy-MM-dd HH:mm:ss
+    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce')
+    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'], errors='coerce')
     
     # Calculate 6-month window
     start_date_6m = today - timedelta(days=30*ds_window_months)
@@ -168,8 +168,15 @@ def process_data(input_file_path):
         
     df_orders_6m = df_orders[df_orders['Ngày đặt'] >= start_date_6m]
     
-    current_month = today.month
-    current_year = today.year
+    # Determine "Current Month" for statistics based on data
+    if not df_orders.empty and pd.notna(df_orders['Ngày đặt'].max()):
+        latest_date = df_orders['Ngày đặt'].max()
+        current_month = latest_date.month
+        current_year = latest_date.year
+    else:
+        current_month = today.month
+        current_year = today.year
+        
     prev_month = 12 if current_month == 1 else current_month - 1
     prev_year = current_year - 1 if current_month == 1 else current_year
 

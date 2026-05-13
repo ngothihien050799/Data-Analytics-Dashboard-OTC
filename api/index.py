@@ -12,12 +12,11 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist', static_url_path='/')
 app.config['JSON_SORT_KEYS'] = False
 CORS(app)
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = os.path.join(BASE_DIR, 'Cau_hinh.xlsx')
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'Cau_hinh.xlsx')
 
 def style_excel(writer, df_tonghop, df_chamdiem):
     workbook = writer.book
@@ -33,7 +32,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
         ("THÔNG TIN KH", 3, "EBF5FF", "2563EB"),
         ("ĐIỂM THÀNH PHẦN RFM", 6, "FFF1F2", "E11D48"),
         ("TỔNG HỢP", 1, "FFFBEB", "D97706"),
-        ("HOẠT ĐỘNG", 3, "F5F3FF", "7C3AED"),
+        ("HOẠT ĐỘNG", 4, "F5F3FF", "7C3AED"),
         ("CHỌN", 1, "F3F4F6", "4B5563")
     ]
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
@@ -82,7 +81,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                     elif val == 'Cảnh báo': cell.fill, cell.font = PatternFill(start_color='FEF08A', end_color='FEF08A', fill_type='solid'), Font(color='854D0E')
                     elif val == 'Ngủ đông': cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
                     elif val == 'Chưa mua': cell.fill, cell.font = PatternFill(start_color='F3F4F6', end_color='F3F4F6', fill_type='solid'), Font(color='374151')
-                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn thiếu']:
+                elif col_name in ['Call thiếu', 'DS thiếu', 'Call còn thiếu', 'DS còn thiếu']:
                     try:
                         num = float(val)
                         if num > 0: cell.fill, cell.font = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), Font(color='991B1B')
@@ -150,9 +149,9 @@ def process_data(input_file_path):
         df_calls = pd.read_excel(xl, '4_Call')
         df_freq = pd.read_excel(xl, '5_FrequencyF')
     
-    # Ensure date formats
-    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'])
-    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'])
+    # Ensure date formats - Optimized for yyyy-MM-dd HH:mm:ss
+    df_orders['Ngày đặt'] = pd.to_datetime(df_orders['Ngày đặt'], errors='coerce')
+    df_calls['Thời gian checkin'] = pd.to_datetime(df_calls['Thời gian checkin'], errors='coerce')
     
     # Calculate 6-month window
     start_date_6m = today - timedelta(days=30*ds_window_months)
@@ -160,11 +159,24 @@ def process_data(input_file_path):
     # --- Processing 7_TongHop ---
     
     # Order statistics
-    df_orders['Revenue'] = df_orders['Số lượng'] * df_orders['Đơn giá']
+    if 'Số lượng' not in df_orders.columns or 'Đơn giá' not in df_orders.columns:
+        df_orders['Revenue'] = 0
+    else:
+        df_orders['Số lượng'] = pd.to_numeric(df_orders['Số lượng'], errors='coerce').fillna(0)
+        df_orders['Đơn giá'] = pd.to_numeric(df_orders['Đơn giá'], errors='coerce').fillna(0)
+        df_orders['Revenue'] = df_orders['Số lượng'] * df_orders['Đơn giá']
+        
     df_orders_6m = df_orders[df_orders['Ngày đặt'] >= start_date_6m]
     
-    current_month = today.month
-    current_year = today.year
+    # Determine "Current Month" for statistics based on data
+    if not df_orders.empty and pd.notna(df_orders['Ngày đặt'].max()):
+        latest_date = df_orders['Ngày đặt'].max()
+        current_month = latest_date.month
+        current_year = latest_date.year
+    else:
+        current_month = today.month
+        current_year = today.year
+        
     prev_month = 12 if current_month == 1 else current_month - 1
     prev_year = current_year - 1 if current_month == 1 else current_year
 
@@ -204,6 +216,7 @@ def process_data(input_file_path):
             'Số lần mua trong 6 tháng': len(sorted_dates),
             'Tổng doanh số 6 tháng': group['Revenue'].sum(),
             'Tổng DS tháng': ds_thang,
+            'Tổng DS tháng trước': ds_thang_truoc,
             'Xu hướng mua': xu_huong,
             'Số ngày mua gần nhất': days_since,
             'Số ngày mua gần thứ 2': diff1,
@@ -218,10 +231,13 @@ def process_data(input_file_path):
     call_stats = []
     for makh, group in df_calls.groupby('Mã KH'):
         last_call = group['Thời gian checkin'].max()
+        # Handle cases where all calls have no timestamp (NaT)
+        days_since_call = (today - last_call).days if pd.notna(last_call) else None
+        
         call_stats.append({
             'Mã KH': makh,
             'Số lần đã gặp': len(group),
-            'Số ngày chưa gặp': (today - last_call).days,
+            'Số ngày chưa gặp': days_since_call,
             'Ngày gặp cuối': last_call.strftime('%d/%m/%Y') if pd.notna(last_call) else None
         })
     df_call_summary = pd.DataFrame(call_stats)
@@ -244,15 +260,19 @@ def process_data(input_file_path):
     if 'F' in df_freq.columns:
         df_freq['Call'] = df_freq[['Call', 'F']].max(axis=1)
         
-    df_freq_grouped = df_freq.groupby('Mã KHTC').agg({
-        'Doanh số KH': 'max',
-        'Call': 'sum'
-    }).reset_index().rename(columns={'Mã KHTC': 'Mã KH', 'Doanh số KH': 'DS mục tiêu', 'Call': 'Call mục tiêu'})
-    
+    if 'Mã KHTC' in df_freq.columns:
+        df_freq_grouped = df_freq.groupby('Mã KHTC').agg({
+            'Doanh số KH': 'max',
+            'Call': 'sum'
+        }).reset_index().rename(columns={'Mã KHTC': 'Mã KH', 'Doanh số KH': 'DS mục tiêu', 'Call': 'Call mục tiêu'})
+    else:
+        df_freq_grouped = pd.DataFrame(columns=['Mã KH', 'DS mục tiêu', 'Call mục tiêu'])
+        
     df_tonghop = df_tonghop.merge(df_freq_grouped, on='Mã KH', how='left')
     
     # Fill Nans for missing columns after merge
     df_tonghop['Tổng DS tháng'] = df_tonghop['Tổng DS tháng'].fillna(0)
+    df_tonghop['Tổng DS tháng trước'] = df_tonghop['Tổng DS tháng trước'].fillna(0)
     df_tonghop['Xu hướng mua'] = df_tonghop['Xu hướng mua'].fillna("Chưa mua")
     df_tonghop['Trạng thái hoạt động'] = df_tonghop['Trạng thái hoạt động'].fillna("Chưa mua")
     df_tonghop['Số lần mua trong 6 tháng'] = df_tonghop['Số lần mua trong 6 tháng'].fillna(0)
@@ -299,8 +319,8 @@ def process_data(input_file_path):
     )
     
     # Final cleanup for Cham_diem_KH
-    df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
-    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn thiếu'})
+    df_chamdiem = df_scoring[['Mã KH', 'Tên khách hàng', 'Hạng KH', 'Điểm R', 'Điểm F', 'Điểm M', 'Điểm Hạng', 'Điểm Call', 'Điểm Chu kỳ', 'ĐIỂM TỔNG', 'DS thiếu', 'Call thiếu', 'Số ngày chưa gặp', 'Ngày gặp cuối']].copy()
+    df_chamdiem = df_chamdiem.rename(columns={'Tên khách hàng': 'Tên KH', 'Call thiếu': 'Call còn thiếu', 'DS thiếu': 'DS còn thiếu'})
     df_chamdiem['Chọn'] = np.nan
     
     df_chamdiem = df_chamdiem.sort_values(by='ĐIỂM TỔNG', ascending=False)
@@ -310,7 +330,7 @@ def process_data(input_file_path):
         'Mã KH', 'Tên khách hàng', 
         'Ngày mua cuối', 'Số lần mua trong 6 tháng', 'Tổng doanh số 6 tháng', 'Số ngày mua gần nhất', 'Số ngày mua gần thứ 2', 'Số ngày mua gần thứ 3', 
         'Số lần đã gặp', 'Số ngày chưa gặp', 
-        'Hạng KH', 'Tổng DS tháng', 
+        'Hạng KH', 'Tổng DS tháng', 'Tổng DS tháng trước',
         'Call thiếu', 'DS mục tiêu', 'DS thiếu',
         'Xu hướng mua', 'Chu kỳ TB', 'Dự báo ngày mua tiếp', 'Trạng thái hoạt động'
     ]
@@ -331,8 +351,72 @@ def process_data(input_file_path):
         # Apply visual styling
         style_excel(writer, df_tonghop, df_chamdiem)
     
+    # --- Calculate Monthly Statistics ---
+    month_orders = df_orders[(df_orders['Ngày đặt'].dt.month == current_month) & (df_orders['Ngày đặt'].dt.year == current_year)]
+    month_calls = df_calls[(df_calls['Thời gian checkin'].dt.month == current_month) & (df_calls['Thời gian checkin'].dt.year == current_year)]
+    
+    customers_with_orders = set(month_orders['Mã KH'].unique())
+    customers_with_calls = set(month_calls['Mã KH'].unique())
+    
+    stats = {
+        'total_customers': int(len(df_kh)),
+        'customers_with_orders': int(len(customers_with_orders)),
+        'customers_with_calls': int(len(customers_with_calls)),
+        'customers_with_both': int(len(customers_with_orders.intersection(customers_with_calls))),
+        'customers_order_no_call': int(len(customers_with_orders - customers_with_calls)),
+        'total_revenue': float(month_orders['Revenue'].sum()),
+        'total_orders': int(len(month_orders)),
+        'total_calls': int(len(month_calls))
+    }
+
+    # --- Identify Casual Customers (Khách vãng lai) ---
+    target_makh_set = set(df_kh['Mã KH'].astype(str).unique())
+    
+    # Casual Orders
+    month_orders_casual = month_orders[~month_orders['Mã KH'].astype(str).isin(target_makh_set)]
+    casual_order_stats = []
+    for makh, group in month_orders_casual.groupby('Mã KH'):
+        # Try to find a name in the group
+        ten_kh = "Không rõ"
+        for col in ['Tên KH', 'Tên khách hàng', 'Tên']:
+            if col in group.columns and not pd.isna(group[col].iloc[0]):
+                ten_kh = group[col].iloc[0]
+                break
+                
+        casual_order_stats.append({
+            'Mã KH': makh,
+            'Tên KH': ten_kh,
+            'Tổng DS tháng': group['Revenue'].sum(),
+            'Số đơn hàng': len(group),
+            'Ngày mua cuối': group['Ngày đặt'].max().strftime('%d/%m/%Y')
+        })
+    df_casual_orders = pd.DataFrame(casual_order_stats)
+    
+    # Casual Calls
+    month_calls_casual = month_calls[~month_calls['Mã KH'].astype(str).isin(target_makh_set)]
+    casual_call_stats = []
+    for makh, group in month_calls_casual.groupby('Mã KH'):
+        # Try to find a name in the group
+        ten_kh = "Không rõ"
+        for col in ['Tên KH', 'Tên khách hàng', 'Tên']:
+            if col in group.columns and not pd.isna(group[col].iloc[0]):
+                ten_kh = group[col].iloc[0]
+                break
+
+        casual_call_stats.append({
+            'Mã KH': makh,
+            'Tên KH': ten_kh,
+            'Số lần Call': len(group),
+            'Ngày Call cuối': group['Thời gian checkin'].max().strftime('%d/%m/%Y')
+        })
+    df_casual_calls = pd.DataFrame(casual_call_stats)
+    
+    # Add casual stats to the stats object
+    stats['casual_with_orders'] = int(len(df_casual_orders))
+    stats['casual_with_calls'] = int(len(df_casual_calls))
+
     output.seek(0)
-    return output, df_tonghop, df_chamdiem, df_nhanvien
+    return output, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls
 
 @app.route('/process', methods=['POST'])
 def handle_process():
@@ -345,12 +429,11 @@ def handle_process():
     
     try:
         import base64
-        import tempfile
-        # Save temp file to /tmp directory which is writable on Vercel
-        temp_path = os.path.join(tempfile.gettempdir(), 'temp_input.xlsx')
+        # Save temp file
+        temp_path = 'temp_input.xlsx'
         file.save(temp_path)
         
-        result_excel, df_tonghop, df_chamdiem, df_nhanvien = process_data(temp_path)
+        result_excel, df_tonghop, df_chamdiem, df_nhanvien, stats, df_casual_orders, df_casual_calls = process_data(temp_path)
         
         os.remove(temp_path)
         
@@ -369,12 +452,16 @@ def handle_process():
             'data_tonghop': records_tonghop,
             'data_chamdiem': records_chamdiem,
             'data_nhanvien': records_nhanvien,
+            'data_casual_orders': df_casual_orders.to_dict(orient='records') if not df_casual_orders.empty else [],
+            'data_casual_calls': df_casual_calls.to_dict(orient='records') if not df_casual_calls.empty else [],
+            'stats': stats,
             'file_b64': excel_base64,
             'filename': 'Result_Thong_Ke.xlsx'
         })
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
+        print("ERROR IN /process:")
         print(error_details)
         return jsonify({
             'error': str(e),
@@ -444,17 +531,18 @@ def update_config():
         if 'threshold_normal' in data: ws.cell(row=22, column=2, value=float(data['threshold_normal']))
         if 'ds_window_months' in data: ws.cell(row=23, column=2, value=float(data['ds_window_months']))
         
-        try:
-            wb.save(CONFIG_PATH)
-        except OSError as e:
-            if e.errno == 30: # Read-only file system
-                print("Warning: Cannot save config persistently on Vercel (Read-only filesystem)")
-            else:
-                raise e
+        wb.save(CONFIG_PATH)
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# For Vercel Serverless Functions
+@app.route('/')
+def serve_index():
+    return app.send_static_file('index.html')
+
+@app.errorhandler(404)
+def not_found(e):
+    return app.send_static_file('index.html')
+
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(port=5000, debug=True)
