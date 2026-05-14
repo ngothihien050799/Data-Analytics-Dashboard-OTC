@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "start /b python app.py && vite",
     "build": "vite build",
     "preview": "vite preview"
   },

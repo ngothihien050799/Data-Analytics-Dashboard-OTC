@@ -58,7 +58,7 @@ def style_excel(writer, df_tonghop, df_chamdiem):
                 sub_cell.border = thin_border
                 ws.cell(row=1, column=c).border = thin_border
             col_idx += span
-        ws.freeze_panes = "A3"
+        ws.freeze_panes = "C3"
         
         # Auto-fit column widths based on content
         for col in range(1, len(df.columns) + 1):
@@ -125,6 +125,9 @@ def excel_date_to_datetime(excel_date):
     return datetime(1899, 12, 30) + timedelta(days=int(excel_date))
 
 def process_data(input_file_path):
+    if not os.path.exists(CONFIG_PATH):
+        raise FileNotFoundError(f"Không tìm thấy file cấu hình tại: {CONFIG_PATH}. Vui lòng kiểm tra lại.")
+    
     # Load Configuration using openpyxl to avoid pandas header offset issues
     wb = openpyxl.load_workbook(CONFIG_PATH, data_only=True)
     ws = wb['Cấu hình']

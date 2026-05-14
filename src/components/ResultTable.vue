@@ -171,11 +171,7 @@ const getScoreGradientStyle = (score) => {
 const getAlertStyle = (col, val) => {
   if (val === null || val === undefined || val === "-" || val === "") return {};
 
-  if (
-    col === "Call thiếu" ||
-    col === "DS thiếu" ||
-    col === "DS còn thiếu"
-  ) {
+  if (col === "Call thiếu" || col === "DS thiếu" || col === "DS còn thiếu") {
     const num = parseFloat(val);
     if (isNaN(num)) return {};
     if (num > 0)
@@ -206,12 +202,7 @@ const getGroupClass = (col) => {
   const hoatdong = ["Số lần đã gặp", "Ngày chưa gặp"];
   const tonghop = ["Hạng KH", "DS tháng", "DS tháng trước"];
   const gap = ["Call thiếu", "DS mục tiêu", "DS thiếu"];
-  const trend = [
-    "Xu hướng",
-    "Chu kỳ TB",
-    "Dự báo mua",
-    "Trạng thái",
-  ];
+  const trend = ["Xu hướng", "Chu kỳ TB", "Dự báo mua", "Trạng thái"];
 
   if (["Mã KH", "Tên khách hàng"].includes(col)) return "group-kh";
   if (history.includes(col)) return "group-history";
@@ -252,7 +243,10 @@ const tonghopHeaders = computed(() => {
 </script>
 
 <template>
-  <div class="result-container glass-card" :class="{ 'is-fullscreen': isFullscreen }">
+  <div
+    class="result-container glass-card"
+    :class="{ 'is-fullscreen': isFullscreen }"
+  >
     <div class="tabs-wrapper">
       <div class="tabs">
         <button
@@ -285,7 +279,11 @@ const tonghopHeaders = computed(() => {
         </button>
       </div>
       <div class="header-actions">
-        <button class="icon-btn btn-fullscreen" @click="toggleFullscreen" :title="isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'">
+        <button
+          class="icon-btn btn-fullscreen"
+          @click="toggleFullscreen"
+          :title="isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'"
+        >
           <Minimize v-if="isFullscreen" :size="18" />
           <Maximize v-else :size="18" />
         </button>
@@ -319,7 +317,9 @@ const tonghopHeaders = computed(() => {
       <table v-if="activeTab === 'chamdiem'" class="table-chamdiem">
         <thead>
           <tr class="group-header">
-            <th colspan="3" class="text-center group-kh">THÔNG TIN KH</th>
+            <th colspan="3" class="text-center group-kh sticky-col-group">
+              THÔNG TIN KH
+            </th>
             <th colspan="6" class="text-center group-rfm">
               ĐIỂM THÀNH PHẦN RFM
             </th>
@@ -359,7 +359,9 @@ const tonghopHeaders = computed(() => {
             <td class="col-makh">
               <span class="font-mono text-sm">{{ row["Mã KH"] }}</span>
             </td>
-            <td class="font-medium text-white col-tenkh">{{ row["Tên KH"] }}</td>
+            <td class="font-medium text-white col-tenkh">
+              {{ row["Tên KH"] }}
+            </td>
             <td>
               <span class="badge" :class="getRankColor(row['Hạng KH'])">
                 <Award
@@ -411,11 +413,11 @@ const tonghopHeaders = computed(() => {
             </td>
             <td
               class="text-right"
-              :style="
-                getAlertStyle('Ngày chưa gặp', row['Ngày chưa gặp'])
-              "
+              :style="getAlertStyle('Ngày chưa gặp', row['Ngày chưa gặp'])"
             >
-              {{ formatNumber(row["Ngày gặp cuối"] ? row["Ngày chưa gặp"] : "-") }}
+              {{
+                formatNumber(row["Ngày gặp cuối"] ? row["Ngày chưa gặp"] : "-")
+              }}
             </td>
             <td class="text-right text-gray-300">
               {{ row["Ngày gặp cuối"] || "-" }}
@@ -432,7 +434,9 @@ const tonghopHeaders = computed(() => {
       <table v-else-if="activeTab === 'tonghop'" class="table-tonghop">
         <thead>
           <tr class="group-header">
-            <th colspan="2" class="text-center group-kh">THÔNG TIN KH</th>
+            <th colspan="2" class="text-center group-kh sticky-col-group">
+              THÔNG TIN KH
+            </th>
             <th colspan="6" class="text-center group-history">
               LỊCH SỬ MUA HÀNG
             </th>
@@ -452,7 +456,13 @@ const tonghopHeaders = computed(() => {
               v-for="col in tonghopHeaders"
               :key="col"
               class="text-center"
-              :class="[getGroupClass(col), { 'col-makh': col === 'Mã KH', 'col-tenkh': col === 'Tên khách hàng' }]"
+              :class="[
+                getGroupClass(col),
+                {
+                  'col-makh': col === 'Mã KH',
+                  'col-tenkh': col === 'Tên khách hàng',
+                },
+              ]"
             >
               {{ col }}
             </th>
@@ -468,7 +478,13 @@ const tonghopHeaders = computed(() => {
             <td
               v-for="col in tonghopHeaders"
               :key="col"
-              :class="[{ 'text-right': typeof row[col] === 'number', 'col-makh': col === 'Mã KH', 'col-tenkh': col === 'Tên khách hàng' }]"
+              :class="[
+                {
+                  'text-right': typeof row[col] === 'number',
+                  'col-makh': col === 'Mã KH',
+                  'col-tenkh': col === 'Tên khách hàng',
+                },
+              ]"
               :style="getAlertStyle(col, row[col])"
             >
               <span
@@ -480,9 +496,11 @@ const tonghopHeaders = computed(() => {
               <span v-else-if="col === 'Mã KH'" class="font-mono text-sm">{{
                 row[col]
               }}</span>
-              <span v-else-if="col === 'Tên khách hàng'" class="font-medium text-white">{{
-                row[col]
-              }}</span>
+              <span
+                v-else-if="col === 'Tên khách hàng'"
+                class="font-medium text-white"
+                >{{ row[col] }}</span
+              >
               <span v-else>{{ formatNumber(row[col]) }}</span>
             </td>
           </tr>
@@ -493,7 +511,9 @@ const tonghopHeaders = computed(() => {
       <table v-else-if="activeTab === 'casual_orders'" class="table-tonghop">
         <thead>
           <tr class="group-header">
-            <th colspan="5" class="text-center group-gap">DANH SÁCH KHÁCH VÃNG LAI CÓ ĐƠN (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)</th>
+            <th colspan="5" class="text-center group-gap">
+              DANH SÁCH KHÁCH VÃNG LAI CÓ ĐƠN (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)
+            </th>
           </tr>
           <tr class="sub-header">
             <th class="text-center group-kh col-makh">Mã KH</th>
@@ -505,14 +525,24 @@ const tonghopHeaders = computed(() => {
         </thead>
         <tbody>
           <tr v-if="paginatedData.length === 0">
-            <td colspan="5" class="empty-state">Không có khách vãng lai phát sinh đơn hàng</td>
+            <td colspan="5" class="empty-state">
+              Không có khách vãng lai phát sinh đơn hàng
+            </td>
           </tr>
           <tr v-for="(row, idx) in paginatedData" :key="idx">
-            <td class="font-mono text-sm text-center col-makh">{{ row['Mã KH'] }}</td>
-            <td class="font-medium text-white col-tenkh">{{ row['Tên KH'] }}</td>
-            <td class="text-right font-bold text-indigo-400">{{ formatNumber(row['Tổng DS tháng']) }}</td>
-            <td class="text-right">{{ row['Số đơn hàng'] }}</td>
-            <td class="text-center text-gray-300">{{ row['Ngày mua cuối'] }}</td>
+            <td class="font-mono text-sm text-center col-makh">
+              {{ row["Mã KH"] }}
+            </td>
+            <td class="font-medium text-white col-tenkh">
+              {{ row["Tên KH"] }}
+            </td>
+            <td class="text-right font-bold text-indigo-400">
+              {{ formatNumber(row["Tổng DS tháng"]) }}
+            </td>
+            <td class="text-right">{{ row["Số đơn hàng"] }}</td>
+            <td class="text-center text-gray-300">
+              {{ row["Ngày mua cuối"] }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -521,7 +551,9 @@ const tonghopHeaders = computed(() => {
       <table v-else-if="activeTab === 'casual_calls'" class="table-tonghop">
         <thead>
           <tr class="group-header">
-            <th colspan="4" class="text-center group-hoatdong">DANH SÁCH KHÁCH VÃNG LAI CÓ CALL (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)</th>
+            <th colspan="4" class="text-center group-hoatdong">
+              DANH SÁCH KHÁCH VÃNG LAI CÓ CALL (KHÔNG TRONG DANH SÁCH TRỌNG TÂM)
+            </th>
           </tr>
           <tr class="sub-header">
             <th class="text-center group-kh col-makh">Mã KH</th>
@@ -532,13 +564,23 @@ const tonghopHeaders = computed(() => {
         </thead>
         <tbody>
           <tr v-if="paginatedData.length === 0">
-            <td colspan="4" class="empty-state">Không có khách vãng lai phát sinh Call</td>
+            <td colspan="4" class="empty-state">
+              Không có khách vãng lai phát sinh Call
+            </td>
           </tr>
           <tr v-for="(row, idx) in paginatedData" :key="idx">
-            <td class="font-mono text-sm text-center col-makh">{{ row['Mã KH'] }}</td>
-            <td class="font-medium text-white col-tenkh">{{ row['Tên KH'] }}</td>
-            <td class="text-right font-bold text-orange-400">{{ row['Số lần Call'] }}</td>
-            <td class="text-center text-gray-300">{{ row['Ngày Call cuối'] }}</td>
+            <td class="font-mono text-sm text-center col-makh">
+              {{ row["Mã KH"] }}
+            </td>
+            <td class="font-medium text-white col-tenkh">
+              {{ row["Tên KH"] }}
+            </td>
+            <td class="text-right font-bold text-orange-400">
+              {{ row["Số lần Call"] }}
+            </td>
+            <td class="text-center text-gray-300">
+              {{ row["Ngày Call cuối"] }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -779,6 +821,15 @@ th {
   min-width: 90px;
   white-space: nowrap;
   text-align: center !important;
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 10 !important;
+  background-color: #0f172a !important; /* Base table background */
+}
+
+th.col-makh {
+  z-index: 40 !important;
+  background-color: #1e3a8a !important;
 }
 
 .col-tenkh {
@@ -788,6 +839,36 @@ th {
   line-height: 1.3;
   word-break: break-word;
   text-align: left !important;
+  position: sticky !important;
+  left: 90px !important;
+  z-index: 10 !important;
+  background-color: #0f172a !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+th.col-tenkh {
+  z-index: 40 !important;
+  background-color: #1e3a8a !important;
+}
+
+/* Sticky for Group Header */
+.sticky-col-group {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 45 !important;
+  background-color: #1e3a8a !important;
+}
+
+/* Zebra striping for sticky columns */
+tbody tr:nth-child(even) .col-makh,
+tbody tr:nth-child(even) .col-tenkh {
+  background-color: #151c2e !important; /* Slightly lighter for even rows */
+}
+
+/* Hover effect for sticky columns */
+tbody tr:hover .col-makh,
+tbody tr:hover .col-tenkh {
+  background-color: #1e293b !important;
 }
 
 tbody tr:nth-child(even) {
@@ -949,7 +1030,6 @@ tbody tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
   flex-wrap: wrap;
   gap: 1rem;
 }

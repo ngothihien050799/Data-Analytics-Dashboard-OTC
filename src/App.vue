@@ -107,12 +107,14 @@ const processFile = async () => {
       if (data.traceback) {
         console.error("Server Traceback:", data.traceback);
       }
+    } else if (err.code === "ERR_NETWORK" || err.message.includes("Network Error")) {
+      errorMessage.value = "Không thể kết nối đến server. Vui lòng đảm bảo app.py đang chạy (Port 5000).";
+    } else if (err.response?.status === 500) {
+      errorMessage.value = "Lỗi Server (500). Có thể do Backend (app.py) chưa được khởi động hoặc gặp lỗi xử lý.";
     } else if (err.code === "ECONNABORTED") {
       errorMessage.value = "Yêu cầu quá hạn. Vui lòng thử lại.";
-    } else if (!err.response) {
-      errorMessage.value = "Không thể kết nối đến server. Vui lòng kiểm tra server backend (app.py).";
     } else {
-      errorMessage.value = "Có lỗi xảy ra trong quá trình xử lý.";
+      errorMessage.value = "Có lỗi xảy ra. Hãy chắc chắn bạn đã chạy 'npm run dev:all' hoặc đã khởi động app.py.";
     }
   } finally {
     loading.value = false;
