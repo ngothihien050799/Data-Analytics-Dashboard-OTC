@@ -10,7 +10,7 @@ import math
 import openpyxl
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-import json
+from hanh_vi import process_hanh_vi_data
 
 app = Flask(__name__, static_folder='dist', static_url_path='/')
 app.config['JSON_SORT_KEYS'] = False
@@ -631,6 +631,41 @@ def update_config():
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/process_hanh_vi', methods=['POST'])
+def handle_process_hanh_vi():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    try:
+        import tempfile
+        import os
+        import uuid
+        temp_path = os.path.join(tempfile.gettempdir(), f'temp_hanhvi_{uuid.uuid4().hex}.xlsx')
+        file.save(temp_path)
+        
+        result = process_hanh_vi_data(temp_path)
+        
+        try:
+            os.remove(temp_path)
+        except Exception as e:
+            print("Could not remove temp file:", e)
+        
+        if result.get("Status") == "Error":
+            return jsonify({'error': result.get("Message"), 'traceback': result.get("Traceback")}), 500
+            
+        return jsonify(result)
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.route('/ping')
 def ping():

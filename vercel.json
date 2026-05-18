@@ -2,12 +2,16 @@
   "version": 2,
   "functions": {
     "api/index.py": {
-      "includeFiles": "Cau_hinh.xlsx"
+      "includeFiles": "*(Cau_hinh.xlsx|hanh_vi.py)"
     }
   },
   "rewrites": [
     {
       "source": "/process",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/process_hanh_vi",
       "destination": "/api/index.py"
     },
     {
