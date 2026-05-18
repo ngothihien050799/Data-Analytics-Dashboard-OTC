@@ -1,0 +1,1 @@
+['STT', 'MNV', 'Tên', 'Mã ĐH', 'Mã KH', 'Tên KH', 'Người nhận', 'Liên hệ', 'Kênh bán', 'Ngày đặt', 'CTKM đơn hàng', 'Tên CTKM', 'Mã sản phẩm', 'Tên sản phẩm', 'ĐVT', 'Số lượng', 'Đơn giá', 'CTKM', 'Tên CTKM (SP)']

@@ -1,0 +1,136 @@
+{
+  "input_excel": {
+    "1_NhanVien": [
+      "SĐT",
+      "MNV",
+      "Tên",
+      "Vị trí",
+      "Phòng ban",
+      "Chi nhánh",
+      "Nhóm",
+      "Tuổi nghề"
+    ],
+    "2_Call": [
+      "STT",
+      "MNV",
+      "Tên",
+      "ID",
+      "Thời gian checkin",
+      "Thời gian checkout",
+      "Mã KH",
+      "Tên KH",
+      "Tọa độ checkin lat",
+      "Tọa độ checkin lng",
+      "Tọa độ checkout lat",
+      "Tọa độ checkout lng",
+      "KHCN",
+      "KHCN.1",
+      "Ghi chú"
+    ],
+    "3_DonHang": [
+      "STT",
+      "MNV",
+      "Tên",
+      "Mã ĐH",
+      "Mã KH",
+      "Tên KH",
+      "Người nhận",
+      "Liên hệ",
+      "Kênh bán",
+      "Ngày đặt",
+      "CTKM đơn hàng",
+      "Tên CTKM",
+      "Mã sản phẩm",
+      "Tên sản phẩm",
+      "ĐVT",
+      "Số lượng",
+      "Đơn giá",
+      "CTKM",
+      "Tên CTKM (SP)"
+    ],
+    "4_SanPham": [
+      "STT",
+      "Mã sản phẩm",
+      "Tên sản phẩm",
+      "CK"
+    ]
+  },
+  "output_excel": {
+    "1. Tổng Quan": [
+      "BÁO CÁO PHÂN TÍCH HÀNH VI BÁN HÀNG - NHÂN VIÊN KINH DOANH OTC"
+    ],
+    "2. Hiệu Quả NV": [
+      "MNV",
+      "Tên NV",
+      "Tuổi Nghề",
+      "Số Visit",
+      "Doanh Thu (M)",
+      "Số Đơn",
+      "KH Thăm",
+      "KH Mua",
+      "Conv%",
+      "Rev/Visit",
+      "Avg Duration (ph)",
+      "Note Tốt%",
+      "Note Xấu%",
+      "Check Ngoài Giờ",
+      "Visit <5p",
+      "GPS Trùng",
+      "Đánh Giá"
+    ],
+    "3. Xu Hướng Tháng": [
+      "MNV",
+      "Tên NV",
+      "T1/2026",
+      "T2/2026",
+      "T3/2026",
+      "T4/2026",
+      "Tổng",
+      "Xu Hướng"
+    ],
+    "4. KH Insights": [
+      "MNV",
+      "Tên NV",
+      "Mã KH",
+      "Tên KH",
+      "Số Visit",
+      "Có Đơn?",
+      "Doanh Thu (VND)",
+      "Đánh Giá KH"
+    ],
+    "5. Bất Thường & Rủi Ro": [
+      "Mức Độ",
+      "MNV",
+      "Tên NV",
+      "Loại Bất Thường",
+      "Chi Tiết",
+      "Số Lượng",
+      "Ghi Chú",
+      "Hành Động"
+    ],
+    "6. Chất Lượng Note": [
+      "Ghi Chú",
+      "Số Lần",
+      "Tỷ Lệ%",
+      "Chất Lượng",
+      "Mức Độ Rủi Ro"
+    ],
+    "7. Doanh Thu & Đơn Hàng": [
+      "MNV",
+      "Tên NV",
+      "Doanh Thu (VND)",
+      "Doanh Thu (M)",
+      "Số Đơn",
+      "Số KH Mua",
+      "Rev/Visit (VND)",
+      "Xếp Hạng"
+    ],
+    "8. Đề Xuất Hành Động": [
+      "KẾ HOẠCH HÀNH ĐỘNG - PHÂN TÍCH HÀNH VI BÁN HÀNG"
+    ],
+    "9. Xu Hướng 8 Tuần": [
+      "XU HƯỚNG ĐƠN HÀNG THEO 8 TUẦN GẦN NHẤT – NHÂN VIÊN KINH DOANH OTC"
+    ]
+  },
+  "docx_text": "📋 Mô Tả Chi Tiết Các Cột – Báo Cáo Phân Tích Hành Vi Bán Hàng\nNguồn dữ liệu: File 04-2026_Danh_sách_data_tổng_hợp_khách_hàng_trọng_tâm_nhóm.xlsx\nKỳ báo cáo: Tháng 01–04/2026\nDữ liệu gốc: Sheet 1_NhanVien (16 NV) · 2_Call (11.202 visit) · 3_DonHang (8.407 dòng đơn)\nI. Sheet 1 – Tổng Quan\nSheet tổng hợp dạng dashboard, không có bảng dữ liệu cột-hàng mà gồm 5 KPI card và bảng phát hiện chính.\nKPI Cards\nII. Sheet 2 – Hiệu Quả NV\nMỗi dòng = 1 nhân viên. Tổng hợp toàn bộ kỳ báo cáo (T1–T4/2026).\nLogic Đánh Giá:\n⛔ Không Hoạt Động → Số Visit = 0\n🚨 Note CRM Kém → Note Xấu% ≥ 80%\n⚠ Conv Thấp → Conv% < 20%\n⭐ Xuất Sắc → Conv% ≥ 90% VÀ Doanh Thu > 300M\n✅ Doanh Thu Cao → Doanh Thu > 500M\n⚠ Ngoài Giờ Nhiều → Check Ngoài Giờ ≥ 15 lần\n➡ Bình Thường → Không rơi vào trường hợp nào trên\nIII. Sheet 3 – Xu Hướng Tháng\nMỗi dòng = 1 nhân viên. Phân tích biến động số visit theo từng tháng.\nIV. Sheet 4 – KH Insights\nMỗi dòng = 1 cặp (Nhân viên × Khách hàng). Phân tích hiệu quả từng mối quan hệ NV–KH.\nLogic Đánh Giá KH:\n⚠ Nhiều Visit-Không Đơn → Visit > 5 lần VÀ Doanh Thu = 0\n📌 Chưa Chuyển Đổi → Visit > 0 VÀ Doanh Thu = 0\n⭐ Hiệu Quả Cao → Doanh Thu ÷ Số Visit > 5.000.000 VND/visit\n✅ Doanh Thu Tốt → Doanh Thu > 10.000.000 VND\n➡ Bình Thường → Còn lại\nV. Sheet 5 – Bất Thường & Rủi Ro\nMỗi dòng = 1 vấn đề phát hiện được. Danh sách cảnh báo phân loại theo mức độ.\nVI. Sheet 6 – Chất Lượng Note\nMỗi dòng = 1 nội dung ghi chú duy nhất. Phân tích toàn bộ ghi chú CRM của nhóm.\nVII. Sheet 7 – Doanh Thu & Đơn Hàng\nMỗi dòng = 1 nhân viên, sắp xếp theo doanh thu giảm dần.\nVIII. Sheet 8 – Đề Xuất Hành Động\nMỗi dòng = 1 đề xuất hành động cụ thể.\nIX. Sheet 9 – Xu Hướng 8 Tuần\nMỗi dòng = 1 nhân viên. Phân tích biến động số đơn hàng và doanh thu theo 8 tuần ISO gần nhất (W11–W18/2026, tức 09/03–29/04/2026).\n⚠ Tuần W18 được đánh dấu * vì chỉ có dữ liệu 3 ngày (27–29/4), không phản ánh đủ 1 tuần đầy đủ. Không dùng W18 để so sánh xu hướng.\nMàu sắc heatmap (cột Đơn & DT):\nTài liệu này mô tả toàn bộ 9 sheet trong file bao_cao_hanh_vi_ban_hang_04_2026.xlsx"
+}

@@ -1,0 +1,368 @@
+{
+  "1. Tổng Quan": {
+    "columns": [
+      "BÁO CÁO PHÂN TÍCH HÀNH VI BÁN HÀNG - NHÂN VIÊN KINH DOANH OTC",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4",
+      "Unnamed: 5",
+      "Unnamed: 6",
+      "Unnamed: 7",
+      "Unnamed: 8"
+    ],
+    "sample_data": [
+      {
+        "BÁO CÁO PHÂN TÍCH HÀNH VI BÁN HÀNG - NHÂN VIÊN KINH DOANH OTC": "Dữ liệu tháng 01–04/2026  |  15 nhân viên  |  Nhóm CNHN-OTC-KV4",
+        "Unnamed: 1": "",
+        "Unnamed: 2": "",
+        "Unnamed: 3": "",
+        "Unnamed: 4": "",
+        "Unnamed: 5": "",
+        "Unnamed: 6": "",
+        "Unnamed: 7": "",
+        "Unnamed: 8": ""
+      },
+      {
+        "BÁO CÁO PHÂN TÍCH HÀNH VI BÁN HÀNG - NHÂN VIÊN KINH DOANH OTC": "",
+        "Unnamed: 1": "",
+        "Unnamed: 2": "",
+        "Unnamed: 3": "",
+        "Unnamed: 4": "",
+        "Unnamed: 5": "",
+        "Unnamed: 6": "",
+        "Unnamed: 7": "",
+        "Unnamed: 8": ""
+      }
+    ]
+  },
+  "2. Hiệu Quả NV": {
+    "columns": [
+      "MNV",
+      "Tên NV",
+      "Tuổi Nghề",
+      "Số Visit",
+      "Doanh Thu (M)",
+      "Số Đơn",
+      "KH Thăm",
+      "KH Mua",
+      "Conv%",
+      "Rev/Visit",
+      "Avg Duration (ph)",
+      "Note Tốt%",
+      "Note Xấu%",
+      "Check Ngoài Giờ",
+      "Visit <5p",
+      "GPS Trùng",
+      "Đánh Giá"
+    ],
+    "sample_data": [
+      {
+        "MNV": 13365,
+        "Tên NV": "Nguyễn Văn Ảnh",
+        "Tuổi Nghề": 55,
+        "Số Visit": 779,
+        "Doanh Thu (M)": 343.2,
+        "Số Đơn": 218,
+        "KH Thăm": 78,
+        "KH Mua": 78,
+        "Conv%": 100.0,
+        "Rev/Visit": 440516,
+        "Avg Duration (ph)": 11.7,
+        "Note Tốt%": 98,
+        "Note Xấu%": 0,
+        "Check Ngoài Giờ": 20,
+        "Visit <5p": 0,
+        "GPS Trùng": 19,
+        "Đánh Giá": "⭐ Xuất Sắc"
+      },
+      {
+        "MNV": 13451,
+        "Tên NV": "Nguyễn Văn Nguyên",
+        "Tuổi Nghề": 54,
+        "Số Visit": 1066,
+        "Doanh Thu (M)": 554.1,
+        "Số Đơn": 311,
+        "KH Thăm": 118,
+        "KH Mua": 92,
+        "Conv%": 78.0,
+        "Rev/Visit": 519834,
+        "Avg Duration (ph)": 7.9,
+        "Note Tốt%": 6,
+        "Note Xấu%": 93,
+        "Check Ngoài Giờ": 0,
+        "Visit <5p": 18,
+        "GPS Trùng": 22,
+        "Đánh Giá": "🚨 Note CRM Kém"
+      }
+    ]
+  },
+  "3. Xu Hướng Tháng": {
+    "columns": [
+      "MNV",
+      "Tên NV",
+      "T1/2026",
+      "T2/2026",
+      "T3/2026",
+      "T4/2026",
+      "Tổng",
+      "Xu Hướng"
+    ],
+    "sample_data": [
+      {
+        "MNV": 13365,
+        "Tên NV": "Nguyễn Văn Ảnh",
+        "T1/2026": 302,
+        "T2/2026": 186,
+        "T3/2026": 291,
+        "T4/2026": 0,
+        "Tổng": 779,
+        "Xu Hướng": "📉 Giảm"
+      },
+      {
+        "MNV": 13451,
+        "Tên NV": "Nguyễn Văn Nguyên",
+        "T1/2026": 274,
+        "T2/2026": 189,
+        "T3/2026": 309,
+        "T4/2026": 294,
+        "Tổng": 1066,
+        "Xu Hướng": "📈 Tăng"
+      }
+    ]
+  },
+  "4. KH Insights": {
+    "columns": [
+      "MNV",
+      "Tên NV",
+      "Mã KH",
+      "Tên KH",
+      "Số Visit",
+      "Có Đơn?",
+      "Doanh Thu (VND)",
+      "Đánh Giá KH"
+    ],
+    "sample_data": [
+      {
+        "MNV": 13365,
+        "Tên NV": "Nguyễn Văn Ảnh",
+        "Mã KH": "O20616",
+        "Tên KH": "Nhà Thuốc 68",
+        "Số Visit": 26,
+        "Có Đơn?": "Có",
+        "Doanh Thu (VND)": 21331200,
+        "Đánh Giá KH": "✅ Doanh Thu Tốt"
+      },
+      {
+        "MNV": 13365,
+        "Tên NV": "Nguyễn Văn Ảnh",
+        "Mã KH": "O27065",
+        "Tên KH": "Nhà thuốc An Khang ",
+        "Số Visit": 21,
+        "Có Đơn?": "Có",
+        "Doanh Thu (VND)": 19897000,
+        "Đánh Giá KH": "✅ Doanh Thu Tốt"
+      }
+    ]
+  },
+  "5. Bất Thường & Rủi Ro": {
+    "columns": [
+      "Mức Độ",
+      "MNV",
+      "Tên NV",
+      "Loại Bất Thường",
+      "Chi Tiết",
+      "Số Lượng",
+      "Ghi Chú",
+      "Hành Động"
+    ],
+    "sample_data": [
+      {
+        "Mức Độ": "🚨 NGHIÊM TRỌNG",
+        "MNV": 13451,
+        "Tên NV": "Nguyễn Văn Nguyên",
+        "Loại Bất Thường": "Note CRM kém chất lượng",
+        "Chi Tiết": "Note chỉ là \"x\"/\"xong\"/\".\" — không có giá trị CRM",
+        "Số Lượng": 995,
+        "Ghi Chú": "Tỷ lệ note xấu: 93%",
+        "Hành Động": "Bắt buộc note tối thiểu 30 ký tự"
+      },
+      {
+        "Mức Độ": "🚨 NGHIÊM TRỌNG",
+        "MNV": 14833,
+        "Tên NV": "Bùi Quang Huy",
+        "Loại Bất Thường": "Note CRM kém chất lượng",
+        "Chi Tiết": "Note chỉ là \"x\"/\"xong\"/\".\" — không có giá trị CRM",
+        "Số Lượng": 1090,
+        "Ghi Chú": "Tỷ lệ note xấu: 98%",
+        "Hành Động": "Bắt buộc note tối thiểu 30 ký tự"
+      }
+    ]
+  },
+  "6. Chất Lượng Note": {
+    "columns": [
+      "Ghi Chú",
+      "Số Lần",
+      "Tỷ Lệ%",
+      "Chất Lượng",
+      "Mức Độ Rủi Ro"
+    ],
+    "sample_data": [
+      {
+        "Ghi Chú": "x",
+        "Số Lần": 1914,
+        "Tỷ Lệ%": 17.1,
+        "Chất Lượng": "❌ Kém (Vô nghĩa)",
+        "Mức Độ Rủi Ro": "🚨 Cao"
+      },
+      {
+        "Ghi Chú": "Hoàn thành nhiệm vụ",
+        "Số Lần": 1374,
+        "Tỷ Lệ%": 12.3,
+        "Chất Lượng": "❌ Kém (Vô nghĩa)",
+        "Mức Độ Rủi Ro": "🚨 Cao"
+      }
+    ]
+  },
+  "7. Doanh Thu & Đơn Hàng": {
+    "columns": [
+      "MNV",
+      "Tên NV",
+      "Doanh Thu (VND)",
+      "Doanh Thu (M)",
+      "Số Đơn",
+      "Số KH Mua",
+      "Rev/Visit (VND)",
+      "Xếp Hạng"
+    ],
+    "sample_data": [
+      {
+        "MNV": 15412,
+        "Tên NV": "Vũ Thị Duyên",
+        "Doanh Thu (VND)": 722162501,
+        "Doanh Thu (M)": 722.2,
+        "Số Đơn": 396,
+        "Số KH Mua": 100,
+        "Rev/Visit (VND)": 701810,
+        "Xếp Hạng": "#1"
+      },
+      {
+        "MNV": 14833,
+        "Tên NV": "Bùi Quang Huy",
+        "Doanh Thu (VND)": 674740261,
+        "Doanh Thu (M)": 674.7,
+        "Số Đơn": 465,
+        "Số KH Mua": 121,
+        "Rev/Visit (VND)": 611178,
+        "Xếp Hạng": "#2"
+      }
+    ]
+  },
+  "8. Đề Xuất Hành Động": {
+    "columns": [
+      "KẾ HOẠCH HÀNH ĐỘNG - PHÂN TÍCH HÀNH VI BÁN HÀNG",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4",
+      "Unnamed: 5",
+      "Unnamed: 6"
+    ],
+    "sample_data": [
+      {
+        "KẾ HOẠCH HÀNH ĐỘNG - PHÂN TÍCH HÀNH VI BÁN HÀNG": "Ưu Tiên",
+        "Unnamed: 1": "Lĩnh Vực",
+        "Unnamed: 2": "Vấn Đề",
+        "Unnamed: 3": "Hành Động Cụ Thể",
+        "Unnamed: 4": "Đối Tượng",
+        "Unnamed: 5": "Timeline",
+        "Unnamed: 6": "Người Phụ Trách"
+      },
+      {
+        "KẾ HOẠCH HÀNH ĐỘNG - PHÂN TÍCH HÀNH VI BÁN HÀNG": "P1 - Ngay",
+        "Unnamed: 1": "Nhân sự",
+        "Unnamed: 2": "Hoàng Thành Trung không có hoạt động",
+        "Unnamed: 3": "Xác minh tình trạng làm việc, lý do không có visit. Điều tra ngay.",
+        "Unnamed: 4": "Phòng NS + QL trực tiếp",
+        "Unnamed: 5": "Trong 3 ngày",
+        "Unnamed: 6": "Trưởng nhóm CNHN-OTC-KV4"
+      }
+    ]
+  },
+  "9. Xu Hướng 8 Tuần": {
+    "columns": [
+      "XU HƯỚNG ĐƠN HÀNG THEO 8 TUẦN GẦN NHẤT – NHÂN VIÊN KINH DOANH OTC",
+      "Unnamed: 1",
+      "Unnamed: 2",
+      "Unnamed: 3",
+      "Unnamed: 4",
+      "Unnamed: 5",
+      "Unnamed: 6",
+      "Unnamed: 7",
+      "Unnamed: 8",
+      "Unnamed: 9",
+      "Unnamed: 10",
+      "Unnamed: 11",
+      "Unnamed: 12",
+      "Unnamed: 13",
+      "Unnamed: 14",
+      "Unnamed: 15",
+      "Unnamed: 16",
+      "Unnamed: 17",
+      "Unnamed: 18",
+      "Unnamed: 19",
+      "Unnamed: 20",
+      "Unnamed: 21"
+    ],
+    "sample_data": [
+      {
+        "XU HƯỚNG ĐƠN HÀNG THEO 8 TUẦN GẦN NHẤT – NHÂN VIÊN KINH DOANH OTC": "* Tuần cuối chưa đủ 7 ngày (dữ liệu đến 29/04/2026). Xu hướng so sánh TB 3 tuần gần (W15–W17) vs TB 3 tuần trước (W12–W14).",
+        "Unnamed: 1": "",
+        "Unnamed: 2": "",
+        "Unnamed: 3": "",
+        "Unnamed: 4": "",
+        "Unnamed: 5": "",
+        "Unnamed: 6": "",
+        "Unnamed: 7": "",
+        "Unnamed: 8": "",
+        "Unnamed: 9": "",
+        "Unnamed: 10": "",
+        "Unnamed: 11": "",
+        "Unnamed: 12": "",
+        "Unnamed: 13": "",
+        "Unnamed: 14": "",
+        "Unnamed: 15": "",
+        "Unnamed: 16": "",
+        "Unnamed: 17": "",
+        "Unnamed: 18": "",
+        "Unnamed: 19": "",
+        "Unnamed: 20": "",
+        "Unnamed: 21": ""
+      },
+      {
+        "XU HƯỚNG ĐƠN HÀNG THEO 8 TUẦN GẦN NHẤT – NHÂN VIÊN KINH DOANH OTC": "MNV",
+        "Unnamed: 1": "Tên Nhân Viên",
+        "Unnamed: 2": "Tuổi Nghề",
+        "Unnamed: 3": "T11\n(09/03–15/03)",
+        "Unnamed: 4": "",
+        "Unnamed: 5": "T12\n(16/03–22/03)",
+        "Unnamed: 6": "",
+        "Unnamed: 7": "T13\n(23/03–29/03)",
+        "Unnamed: 8": "",
+        "Unnamed: 9": "T14\n(30/03–05/04)",
+        "Unnamed: 10": "",
+        "Unnamed: 11": "T15\n(06/04–12/04)",
+        "Unnamed: 12": "",
+        "Unnamed: 13": "T16\n(13/04–19/04)",
+        "Unnamed: 14": "",
+        "Unnamed: 15": "T17\n(20/04–26/04)",
+        "Unnamed: 16": "",
+        "Unnamed: 17": "T18*\n(27/04–29/04)",
+        "Unnamed: 18": "",
+        "Unnamed: 19": "Xu Hướng",
+        "Unnamed: 20": "TB Đơn/Tuần\n(3T gần)",
+        "Unnamed: 21": "Thay Đổi\nvs 3T trước"
+      }
+    ]
+  }
+}

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Dashboard — Nhân viên OTC T1–T4/2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0d0f12;
+  --bg2: #141720;
+  --bg3: #1c2030;
+  --bg4: #242838;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8ecf4;
+  --text2: #8892a4;
+  --text3: #555f72;
+  --accent: #4f8ef7;
+  --accent2: #2d5fbf;
+  --green: #3ecf8e;
+  --green2: #1a7a50;
+  --red: #f05252;
+  --red2: #8b2020;
+  --amber: #f5a623;
+  --amber2: #7a4c08;
+  --purple: #a78bfa;
+  --teal: #2dd4bf;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --r: 8px;
+  --r2: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+/* ── LAYOUT ── */
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 0;
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .logo-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 10px;
+  font-family: var(--mono);
+}
+.sidebar-logo h1 { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.sidebar-logo p { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.nav-section { padding: 14px 12px 6px; }
+.nav-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 6px; margin-bottom: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  border-radius: var(--r); cursor: pointer; transition: all 0.15s;
+  font-size: 13px; color: var(--text2); margin-bottom: 1px;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: rgba(79,142,247,0.15); color: var(--accent); }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.group-switcher { padding: 12px; margin-top: auto; border-top: 1px solid var(--border); }
+.group-btn {
+  display: block; width: 100%; padding: 8px 12px; margin-bottom: 6px;
+  border-radius: var(--r); border: 1px solid var(--border2);
+  background: transparent; color: var(--text2); font-family: var(--font);
+  font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.group-btn:hover { background: var(--bg3); color: var(--text); }
+.group-btn.active { background: rgba(79,142,247,0.15); border-color: var(--accent); color: var(--accent); }
+.group-btn .gname { font-weight: 500; display: block; }
+.group-btn .ginfo { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.group-btn.active .ginfo { color: rgba(79,142,247,0.7); }
+
+/* ── MAIN ── */
+.main { overflow-y: auto; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(13,15,18,0.95); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.topbar-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.timestamp { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.badge-live {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(62,207,142,0.12); border: 1px solid rgba(62,207,142,0.25);
+  color: var(--green); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+}
+.badge-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+.content { padding: 24px 28px; }
+
+/* ── SECTION HEADER ── */
+.section-title {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px; margin-top: 24px;
+}
+.section-title:first-child { margin-top: 0; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 16px 18px; position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.kpi-card.c-blue::before { background: var(--accent); }
+.kpi-card.c-green::before { background: var(--green); }
+.kpi-card.c-amber::before { background: var(--amber); }
+.kpi-card.c-red::before { background: var(--red); }
+.kpi-card.c-purple::before { background: var(--purple); }
+.kpi-card.c-teal::before { background: var(--teal); }
+.kpi-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.kpi-label svg { width: 13px; height: 13px; }
+.kpi-value { font-size: 26px; font-weight: 300; color: var(--text); letter-spacing: -0.03em; font-family: var(--mono); line-height: 1; }
+.kpi-value span { font-size: 14px; font-weight: 400; color: var(--text2); margin-left: 2px; }
+.kpi-sub { font-size: 11px; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.kpi-sub.up { color: var(--green); }
+.kpi-sub.down { color: var(--red); }
+.kpi-sub.warn { color: var(--amber); }
+.kpi-sub.neutral { color: var(--text3); }
+
+/* ── CHARTS GRID ── */
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.charts-row.thirds { grid-template-columns: 2fr 1fr; }
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 18px 20px;
+}
+.card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-size: 12px; font-weight: 500; color: var(--text); }
+.card-sub { font-size: 11px; color: var(--text3); }
+.chart-wrap { position: relative; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table.nv-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.nv-table th {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.nv-table th.r { text-align: right; }
+table.nv-table td {
+  padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text); vertical-align: middle; white-space: nowrap;
+}
+table.nv-table tr:last-child td { border-bottom: none; }
+table.nv-table tr:hover td { background: rgba(255,255,255,0.02); }
+table.nv-table td.r { text-align: right; font-family: var(--mono); }
+table.nv-table td.mono { font-family: var(--mono); }
+.name-cell { display: flex; align-items: center; gap: 8px; }
+.avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; flex-shrink: 0;
+}
+.rev-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.rev-bar-bg { flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; min-width: 60px; }
+.rev-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+  white-space: nowrap;
+}
+.badge.ok { background: rgba(62,207,142,0.12); color: var(--green); border: 1px solid rgba(62,207,142,0.2); }
+.badge.warn { background: rgba(245,166,35,0.12); color: var(--amber); border: 1px solid rgba(245,166,35,0.2); }
+.badge.err { background: rgba(240,82,82,0.12); color: var(--red); border: 1px solid rgba(240,82,82,0.2); }
+.badge.off { background: rgba(136,146,164,0.12); color: var(--text3); border: 1px solid var(--border); }
+
+/* ── SPARKLINE ── */
+.spark { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
+.spark-b { width: 5px; border-radius: 1px 1px 0 0; flex-shrink: 0; }
+
+/* ── HEATMAP ── */
+.heatmap-grid { display: grid; gap: 2px; }
+.hm-cell {
+  border-radius: 3px; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 500; font-family: var(--mono);
+  min-height: 26px; transition: opacity 0.15s;
+}
+.hm-cell:hover { opacity: 0.8; }
+.hm-head { font-size: 10px; color: var(--text3); text-align: center; padding: 3px 0; }
+.hm-name { font-size: 11px; color: var(--text2); padding: 3px 4px; display: flex; align-items: center; overflow: hidden; }
+
+/* ── NOTE BARS ── */
+.note-row { margin-bottom: 10px; }
+.note-meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+.note-bar-wrap { height: 6px; border-radius: 3px; overflow: hidden; background: var(--bg4); display: flex; }
+.nb-good { background: var(--green); }
+.nb-bad { background: var(--red); }
+
+/* ── ALERTS ── */
+.alert-item {
+  display: flex; gap: 10px; padding: 10px 12px;
+  border-radius: var(--r); margin-bottom: 6px;
+  border-left: 3px solid;
+}
+.alert-item.err { background: rgba(240,82,82,0.08); border-color: var(--red); }
+.alert-item.warn { background: rgba(245,166,35,0.08); border-color: var(--amber); }
+.alert-item.info { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+.alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.alert-title { font-size: 12px; font-weight: 500; color: var(--text); }
+.alert-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ── MONTHLY TREND ── */
+.trend-mini { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+.trend-b { flex: 1; border-radius: 2px 2px 0 0; min-width: 8px; }
+
+/* ── SECTION TABS ── */
+.view { display: none; }
+.view.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">OTC</div>
+      <h1>Sales Dashboard</h1>
+      <p>T1–T4 / 2026</p>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Phân tích</div>
+      <div class="nav-item active" onclick="showView('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Tổng quan
+      </div>
+      <div class="nav-item" onclick="showView('nv')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Nhân viên
+      </div>
+      <div class="nav-item" onclick="showView('trend')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Xu hướng 8 tuần
+      </div>
+      <div class="nav-item" onclick="showView('alerts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Cảnh báo
+      </div>
+    </div>
+
+    <div class="group-switcher">
+      <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding:0 4px">Nhóm</div>
+      <button class="group-btn active" onclick="switchGroup(0, this)">
+        <span class="gname">CNHN-OTC-KV4</span>
+        <span class="ginfo" id="g0-info">Đang tải…</span>
+      </button>
+      <button class="group-btn" onclick="switchGroup(1, this)">
+        <span class="gname">CNHN-OTC-KV1-CK2</span>
+        <span class="ginfo" id="g1-info">Đang tải…</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="tb-title">CNHN-OTC-KV4 — Báo cáo hành vi bán hàng</div>
+        <div class="topbar-sub">Dữ liệu từ hệ thống CRM & đơn hàng · T1–T4/2026</div>
+      </div>
+      <div class="topbar-right">
+        <div class="timestamp">Cập nhật: 29/04/2026</div>
+        <div class="badge-live">Phân tích thực</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── VIEW: OVERVIEW ── -->
+      <div class="view active" id="view-overview">
+        <div class="section-title">Chỉ số tổng hợp</div>
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <div class="section-title">Doanh thu & Conversion</div>
+        <div class="charts-row">
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Doanh thu theo nhân viên</div><div class="card-sub">Triệu VND — T1–T4/2026</div></div>
+            </div>
+            <div class="chart-wrap" style="height:260px"><canvas id="chart-rev" role="img" aria-label="Bar chart doanh thu theo nhân viên"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Conversion rate</div><div class="card-sub">% KH thăm → KH mua</div></div>
+            </div>
+            <div class="chart-wrap" style="height:260px"><canvas id="chart-conv" role="img" aria-label="Horizontal bar chart conversion rate"></canvas></div>
+          </div>
+        </div>
+
+        <div class="charts-row thirds">
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Visit theo tháng</div><div class="card-sub">T1 → T4/2026</div></div>
+            </div>
+            <div class="chart-wrap" style="height:200px"><canvas id="chart-monthly" role="img" aria-label="Line chart visit theo tháng"></canvas></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Chất lượng note CRM</div></div>
+            <div id="note-bars"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: NV TABLE ── -->
+      <div class="view" id="view-nv">
+        <div class="section-title">Bảng chi tiết nhân viên</div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="nv-table" id="nv-table">
+              <thead>
+                <tr>
+                  <th>Nhân viên</th>
+                  <th class="r">Visit</th>
+                  <th class="r">DT (M)</th>
+                  <th class="r">Đơn</th>
+                  <th class="r">Conv%</th>
+                  <th class="r">Avg visit</th>
+                  <th>Note CRM</th>
+                  <th class="r">Ngoài giờ</th>
+                  <th class="r">GPS ≡</th>
+                  <th>Xu hướng</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="nv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: TREND ── -->
+      <div class="view" id="view-trend">
+        <div class="section-title">Xu hướng đơn hàng — 8 tuần gần nhất</div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <div><div class="card-title">Heatmap số đơn theo tuần</div><div class="card-sub">W11–W18 (09/03–29/04/2026) · *W18 chưa đủ tuần</div></div>
+            <div style="display:flex;gap:8px;align-items:center;font-size:11px;color:var(--text3)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1a3550;display:inline-block"></span>0</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1e5a7a;display:inline-block"></span>Thấp</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1a7faa;display:inline-block"></span>TB</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#2196d3;display:inline-block"></span>Cao</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#4fc3f7;display:inline-block"></span>Đỉnh</span>
+            </div>
+          </div>
+          <div id="heatmap-container"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Xu hướng tổng đơn toàn nhóm</div></div>
+          <div class="chart-wrap" style="height:180px"><canvas id="chart-weekly" role="img" aria-label="Line chart xu hướng đơn hàng 8 tuần"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: ALERTS ── -->
+      <div class="view" id="view-alerts">
+        <div class="section-title">Cảnh báo & phát hiện bất thường</div>
+        <div id="alerts-container"></div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<script>
+const DATA = {"groups": [{"id": "kv4", "name": "CNHN-OTC-KV4", "members": [{"mnv": "019351", "ten": "Hoàng Thị Xuyến", "tuoi_nghe": 2, "visits": 126, "rev": 25.2, "orders": 29, "kh_visit": 86, "kh_buy": 18, "conv": 20.9, "avg_dur": 5.8, "note_bad_pct": 13, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 126, 0], "weekly": [21, 3, 0, 0, 0, 0, 0, 0]}, {"mnv": "018854", "ten": "Trần Văn Bách", "tuoi_nghe": 8, "visits": 1159, "rev": 544.6, "orders": 507, "kh_visit": 138, "kh_buy": 111, "conv": 80.4, "avg_dur": 10.7, "note_bad_pct": 3, "off_hours": 2, "short_visits": 0, "gps_same": 0, "monthly": [351, 235, 327, 246], "weekly": [40, 22, 24, 47, 34, 38, 18, 2]}, {"mnv": "015412", "ten": "Vũ Thị Duyên", "tuoi_nghe": 36, "visits": 1029, "rev": 722.2, "orders": 396, "kh_visit": 137, "kh_buy": 100, "conv": 73.0, "avg_dur": 7.9, "note_bad_pct": 1, "off_hours": 0, "short_visits": 11, "gps_same": 16, "monthly": [294, 161, 288, 286], "weekly": [42, 42, 21, 46, 34, 21, 7, 0]}, {"mnv": "014833", "ten": "Bùi Quang Huy", "tuoi_nghe": 42, "visits": 1104, "rev": 674.7, "orders": 465, "kh_visit": 139, "kh_buy": 121, "conv": 87.1, "avg_dur": 13.8, "note_bad_pct": 99, "off_hours": 12, "short_visits": 0, "gps_same": 25, "monthly": [315, 156, 352, 281], "weekly": [48, 31, 32, 18, 31, 39, 28, 2]}, {"mnv": "019531", "ten": "Phạm Quang Hoạt", "tuoi_nghe": 1, "visits": 290, "rev": 84.4, "orders": 78, "kh_visit": 121, "kh_buy": 47, "conv": 38.8, "avg_dur": 8.8, "note_bad_pct": 93, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 290], "weekly": [0, 0, 0, 17, 21, 15, 20, 5]}, {"mnv": "019714", "ten": "Hoàng Thành Trung", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "013365", "ten": "Nguyễn Văn Ảnh", "tuoi_nghe": 55, "visits": 779, "rev": 343.2, "orders": 218, "kh_visit": 78, "kh_buy": 78, "conv": 100.0, "avg_dur": 11.7, "note_bad_pct": 0, "off_hours": 20, "short_visits": 0, "gps_same": 19, "monthly": [302, 186, 291, 0], "weekly": [10, 13, 15, 9, 0, 0, 0, 0]}, {"mnv": "014981", "ten": "Nguyễn Long Vỹ", "tuoi_nghe": 40, "visits": 1030, "rev": 404.7, "orders": 305, "kh_visit": 121, "kh_buy": 99, "conv": 81.8, "avg_dur": 7.3, "note_bad_pct": 94, "off_hours": 0, "short_visits": 9, "gps_same": 14, "monthly": [314, 125, 318, 273], "weekly": [28, 25, 15, 19, 36, 16, 28, 2]}, {"mnv": "015417", "ten": "Nguyễn Hải Nam", "tuoi_nghe": 36, "visits": 1094, "rev": 480.9, "orders": 503, "kh_visit": 147, "kh_buy": 118, "conv": 80.3, "avg_dur": 9.7, "note_bad_pct": 100, "off_hours": 0, "short_visits": 5, "gps_same": 12, "monthly": [293, 204, 308, 289], "weekly": [39, 26, 42, 42, 41, 28, 24, 2]}, {"mnv": "013451", "ten": "Nguyễn Văn Nguyên", "tuoi_nghe": 54, "visits": 1066, "rev": 554.1, "orders": 311, "kh_visit": 118, "kh_buy": 92, "conv": 78.0, "avg_dur": 7.9, "note_bad_pct": 93, "off_hours": 0, "short_visits": 18, "gps_same": 22, "monthly": [274, 189, 309, 294], "weekly": [28, 22, 40, 10, 26, 10, 17, 18]}, {"mnv": "019291", "ten": "Nguyễn Minh Đức", "tuoi_nghe": 4, "visits": 394, "rev": 7.6, "orders": 16, "kh_visit": 106, "kh_buy": 10, "conv": 9.4, "avg_dur": 10.7, "note_bad_pct": 4, "off_hours": 7, "short_visits": 0, "gps_same": 1, "monthly": [123, 186, 85, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018139", "ten": "Nguyễn Thị Thắm", "tuoi_nghe": 13, "visits": 1092, "rev": 346.4, "orders": 300, "kh_visit": 119, "kh_buy": 71, "conv": 59.7, "avg_dur": 7.4, "note_bad_pct": 0, "off_hours": 1, "short_visits": 0, "gps_same": 4, "monthly": [303, 197, 303, 289], "weekly": [16, 25, 29, 22, 14, 20, 20, 10]}, {"mnv": "016403", "ten": "Dương Văn Tuấn", "tuoi_nghe": 27, "visits": 1120, "rev": 445.1, "orders": 316, "kh_visit": 110, "kh_buy": 84, "conv": 76.4, "avg_dur": 10.6, "note_bad_pct": 94, "off_hours": 0, "short_visits": 1, "gps_same": 5, "monthly": [339, 163, 317, 301], "weekly": [19, 24, 24, 46, 28, 12, 21, 20]}, {"mnv": "019230", "ten": "Lưu Thị Thư", "tuoi_nghe": 4, "visits": 558, "rev": 30.9, "orders": 52, "kh_visit": 96, "kh_buy": 31, "conv": 32.3, "avg_dur": 6.8, "note_bad_pct": 97, "off_hours": 0, "short_visits": 0, "gps_same": 2, "monthly": [301, 181, 76, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "019349", "ten": "Quyền Thế Thuần", "tuoi_nghe": 2, "visits": 361, "rev": 34.5, "orders": 49, "kh_visit": 122, "kh_buy": 31, "conv": 25.4, "avg_dur": 8.6, "note_bad_pct": 95, "off_hours": 0, "short_visits": 0, "gps_same": 3, "monthly": [0, 0, 330, 31], "weekly": [12, 13, 10, 6, 0, 0, 1, 0]}], "weeks": ["T11\n09/03–15/03", "T12\n16/03–22/03", "T13\n23/03–29/03", "T14\n30/03–05/04", "T15\n06/04–12/04", "T16\n13/04–19/04", "T17\n20/04–26/04", "T18*\n27/04–03/05"]}, {"id": "kv2", "name": "CNHN-OTC-KV1-CK2", "members": [{"mnv": "019543", "ten": "Lương Văn Thiết", "tuoi_nghe": 1, "visits": 161, "rev": 72.0, "orders": 82, "kh_visit": 62, "kh_buy": 37, "conv": 59.7, "avg_dur": 6.7, "note_bad_pct": 2, "off_hours": 2, "short_visits": 1, "gps_same": 11, "monthly": [0, 0, 0, 161], "weekly": [0, 0, 0, 15, 17, 23, 13, 14]}, {"mnv": "016380", "ten": "Lê Văn Vũ", "tuoi_nghe": 27, "visits": 1061, "rev": 400.7, "orders": 330, "kh_visit": 122, "kh_buy": 101, "conv": 82.8, "avg_dur": 9.3, "note_bad_pct": 97, "off_hours": 1, "short_visits": 3, "gps_same": 348, "monthly": [307, 185, 297, 272], "weekly": [54, 43, 38, 18, 17, 10, 14, 3]}, {"mnv": "017652", "ten": "Vũ Thị Hoà", "tuoi_nghe": 19, "visits": 956, "rev": 602.5, "orders": 475, "kh_visit": 151, "kh_buy": 129, "conv": 85.4, "avg_dur": 9.3, "note_bad_pct": 6, "off_hours": 1, "short_visits": 0, "gps_same": 14, "monthly": [287, 163, 257, 249], "weekly": [53, 44, 45, 20, 28, 21, 13, 29]}, {"mnv": "013626", "ten": "Vũ Văn Lâm", "tuoi_nghe": 51, "visits": 1096, "rev": 645.8, "orders": 530, "kh_visit": 136, "kh_buy": 125, "conv": 91.9, "avg_dur": 8.9, "note_bad_pct": 2, "off_hours": 1, "short_visits": 0, "gps_same": 11, "monthly": [333, 173, 309, 281], "weekly": [62, 64, 25, 13, 56, 30, 21, 15]}, {"mnv": "019255", "ten": "Thi Phước Long", "tuoi_nghe": 4, "visits": 77, "rev": 2.5, "orders": 5, "kh_visit": 12, "kh_buy": 5, "conv": 41.7, "avg_dur": 7.2, "note_bad_pct": 97, "off_hours": 0, "short_visits": 0, "gps_same": 1, "monthly": [77, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "012638", "ten": "Cao Hồng Nhung", "tuoi_nghe": 63, "visits": 723, "rev": 606.2, "orders": 420, "kh_visit": 93, "kh_buy": 89, "conv": 95.7, "avg_dur": 8.7, "note_bad_pct": 9, "off_hours": 7, "short_visits": 2, "gps_same": 7, "monthly": [266, 96, 159, 202], "weekly": [59, 24, 37, 15, 11, 31, 27, 25]}, {"mnv": "019721", "ten": "Hà Thị Ánh Nguyệt", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018594", "ten": "Đặng Văn Lương", "tuoi_nghe": 10, "visits": 678, "rev": 234.0, "orders": 209, "kh_visit": 88, "kh_buy": 59, "conv": 67.0, "avg_dur": 7.5, "note_bad_pct": 12, "off_hours": 5, "short_visits": 0, "gps_same": 264, "monthly": [231, 48, 195, 204], "weekly": [50, 25, 15, 26, 3, 5, 11, 0]}, {"mnv": "019145", "ten": "Nguyễn Thị Huyền Trang", "tuoi_nghe": 5, "visits": 1042, "rev": 584.9, "orders": 536, "kh_visit": 124, "kh_buy": 102, "conv": 82.3, "avg_dur": 10.2, "note_bad_pct": 0, "off_hours": 5, "short_visits": 1, "gps_same": 100, "monthly": [248, 184, 331, 279], "weekly": [38, 62, 27, 33, 33, 40, 22, 10]}, {"mnv": "019722", "ten": "Nguyễn Thị Thúy", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "014308", "ten": "Nguyễn Thị Ngọc Huyền", "tuoi_nghe": 46, "visits": 1131, "rev": 620.0, "orders": 545, "kh_visit": 151, "kh_buy": 138, "conv": 91.4, "avg_dur": 8.7, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 29, "monthly": [330, 190, 312, 299], "weekly": [75, 34, 23, 22, 48, 35, 16, 20]}, {"mnv": "019206", "ten": "Nguyễn Đức Trung", "tuoi_nghe": 4, "visits": 513, "rev": 92.0, "orders": 89, "kh_visit": 102, "kh_buy": 46, "conv": 45.1, "avg_dur": 9.3, "note_bad_pct": 4, "off_hours": 1, "short_visits": 0, "gps_same": 182, "monthly": [190, 181, 142, 0], "weekly": [19, 18, 1, 1, 0, 0, 0, 0]}, {"mnv": "014982", "ten": "Nguyễn Thức Anh", "tuoi_nghe": 40, "visits": 694, "rev": 347.6, "orders": 315, "kh_visit": 96, "kh_buy": 87, "conv": 90.6, "avg_dur": 8.8, "note_bad_pct": 4, "off_hours": 0, "short_visits": 0, "gps_same": 270, "monthly": [252, 104, 225, 113], "weekly": [61, 37, 39, 19, 2, 11, 8, 1]}, {"mnv": "019542", "ten": "Nguyễn Bá Anh", "tuoi_nghe": 1, "visits": 31, "rev": 6.1, "orders": 13, "kh_visit": 31, "kh_buy": 9, "conv": 29.0, "avg_dur": 15.8, "note_bad_pct": 3, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 31], "weekly": [0, 0, 0, 11, 2, 0, 0, 0]}, {"mnv": "010658", "ten": "Phạm Mạnh Hùng", "tuoi_nghe": 98, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "016020", "ten": "Nguyễn Ngọc Hải", "tuoi_nghe": 31, "visits": 863, "rev": 174.8, "orders": 192, "kh_visit": 110, "kh_buy": 61, "conv": 55.5, "avg_dur": 12.5, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 55, "monthly": [257, 110, 330, 166], "weekly": [25, 21, 40, 12, 10, 1, 0, 2]}, {"mnv": "019146", "ten": "Trần Đình Duẫn", "tuoi_nghe": 5, "visits": 272, "rev": 28.0, "orders": 28, "kh_visit": 71, "kh_buy": 20, "conv": 28.2, "avg_dur": 6.3, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [124, 148, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "016696", "ten": "Cao Thị Tâm", "tuoi_nghe": 25, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018780", "ten": "Lê Văn Cường", "tuoi_nghe": 9, "visits": 550, "rev": 177.0, "orders": 141, "kh_visit": 85, "kh_buy": 57, "conv": 67.1, "avg_dur": 8.3, "note_bad_pct": 7, "off_hours": 2, "short_visits": 0, "gps_same": 153, "monthly": [292, 115, 143, 0], "weekly": [35, 24, 20, 2, 0, 0, 0, 0]}, {"mnv": "019277", "ten": "Lê Văn Thịnh", "tuoi_nghe": 4, "visits": 227, "rev": 26.4, "orders": 32, "kh_visit": 71, "kh_buy": 22, "conv": 31.0, "avg_dur": 8.4, "note_bad_pct": 1, "off_hours": 1, "short_visits": 0, "gps_same": 0, "monthly": [67, 160, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "019541", "ten": "Nguyễn Minh Tiến", "tuoi_nghe": 1, "visits": 162, "rev": 28.0, "orders": 53, "kh_visit": 86, "kh_buy": 27, "conv": 31.4, "avg_dur": 7.7, "note_bad_pct": 86, "off_hours": 1, "short_visits": 1, "gps_same": 4, "monthly": [0, 0, 0, 162], "weekly": [0, 0, 0, 4, 12, 17, 12, 8]}, {"mnv": "019225", "ten": "Nguyễn Anh Đào", "tuoi_nghe": 4, "visits": 662, "rev": 98.2, "orders": 113, "kh_visit": 94, "kh_buy": 39, "conv": 41.5, "avg_dur": 7.2, "note_bad_pct": 6, "off_hours": 2, "short_visits": 1, "gps_same": 7, "monthly": [206, 177, 279, 0], "weekly": [7, 5, 29, 3, 0, 0, 0, 0]}, {"mnv": "018228", "ten": "Trần Y Nam", "tuoi_nghe": 13, "visits": 1003, "rev": 365.9, "orders": 380, "kh_visit": 135, "kh_buy": 108, "conv": 80.0, "avg_dur": 8.9, "note_bad_pct": 6, "off_hours": 1, "short_visits": 1, "gps_same": 45, "monthly": [307, 123, 292, 281], "weekly": [67, 38, 40, 31, 14, 15, 7, 1]}, {"mnv": "019347", "ten": "Ngô Ngọc Lâm", "tuoi_nghe": 2, "visits": 355, "rev": 67.2, "orders": 73, "kh_visit": 121, "kh_buy": 38, "conv": 31.4, "avg_dur": 8.3, "note_bad_pct": 96, "off_hours": 2, "short_visits": 0, "gps_same": 1, "monthly": [0, 0, 185, 170], "weekly": [14, 12, 7, 9, 10, 4, 3, 2]}], "weeks": ["T11\n09/03–15/03", "T12\n16/03–22/03", "T13\n23/03–29/03", "T14\n30/03–05/04", "T15\n06/04–12/04", "T16\n13/04–19/04", "T17\n20/04–26/04", "T18*\n27/04–03/05"]}]};
+
+let currentGroup = 0;
+let charts = {};
+
+const AVATAR_COLORS = ['#4f8ef7','#3ecf8e','#a78bfa','#f5a623','#2dd4bf','#f05252','#ec4899','#8b5cf6'];
+function avatarColor(i){ return AVATAR_COLORS[i % AVATAR_COLORS.length]; }
+function initials(name){ const p=name.trim().split(' '); return p.length>=2?p[p.length-2][0]+p[p.length-1][0]:name.slice(0,2); }
+
+function getGroup(){ return DATA.groups[currentGroup]; }
+
+function groupStats(g){
+  const m=g.members;
+  const active=m.filter(x=>x.visits>0);
+  return {
+    totalVisits: m.reduce((s,x)=>s+x.visits,0),
+    totalRev: m.reduce((s,x)=>s+x.rev,0),
+    totalOrders: m.reduce((s,x)=>s+x.orders,0),
+    totalKhBuy: m.reduce((s,x)=>s+x.kh_buy,0),
+    totalKhVisit: m.reduce((s,x)=>s+x.kh_visit,0),
+    activeCount: active.length,
+    totalCount: m.length,
+    avgConv: active.length ? active.reduce((s,x)=>s+x.conv,0)/active.length : 0,
+    avgDur: active.length ? active.reduce((s,x)=>s+x.avg_dur,0)/active.length : 0,
+    noteBadPct: active.length ? active.reduce((s,x)=>s+x.note_bad_pct,0)/active.length : 0,
+    gpsIssues: m.reduce((s,x)=>s+x.gps_same,0),
+    offHours: m.reduce((s,x)=>s+x.off_hours,0),
+  };
+}
+
+function renderKPI(){
+  const g=getGroup(); const s=groupStats(g);
+  const conv=s.totalKhVisit>0?Math.round(s.totalKhBuy/s.totalKhVisit*100):0;
+  const cards=[
+    {label:'Tổng visit',val:s.totalVisits.toLocaleString('vi'),unit:'',cls:'c-blue',icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8 11c2.21 0 4 .89 4 2v2',sub:'Lượt thăm khách hàng',subCls:'neutral'},
+    {label:'Doanh thu',val:s.totalRev.toFixed(1),unit:'M',cls:'c-green',icon:'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',sub:'VND T1–T4/2026',subCls:'neutral'},
+    {label:'Tổng đơn hàng',val:s.totalOrders.toLocaleString('vi'),unit:'',cls:'c-teal',icon:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',sub:'Đơn duy nhất',subCls:'neutral'},
+    {label:'KH mua hàng',val:s.totalKhBuy.toLocaleString('vi'),unit:'',cls:'c-purple',icon:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',sub:`trên ${s.totalKhVisit} KH thăm`,subCls:'neutral'},
+    {label:'Conversion',val:conv,unit:'%',cls:conv>=80?'c-green':conv>=60?'c-amber':'c-red',icon:'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',sub:conv>=80?'Đạt mục tiêu ≥80%':conv>=60?'Dưới mục tiêu 80%':'Cần cải thiện gấp',subCls:conv>=80?'up':conv>=60?'warn':'down'},
+    {label:'Avg visit',val:s.avgDur.toFixed(1),unit:'ph',cls:'c-blue',icon:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',sub:'Thời gian TB/visit',subCls:'neutral'},
+    {label:'Note CRM kém',val:Math.round(s.noteBadPct),unit:'%',cls:'c-red',icon:'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',sub:s.noteBadPct>60?'Cần xử lý ngay':s.noteBadPct>30?'Cần cải thiện':'Mức chấp nhận',subCls:s.noteBadPct>60?'down':s.noteBadPct>30?'warn':'up'},
+    {label:'NV hoạt động',val:`${s.activeCount}/${s.totalCount}`,unit:'',cls:'c-teal',icon:'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',sub:`${s.totalCount-s.activeCount} NV không có visit`,subCls:s.totalCount-s.activeCount>0?'warn':'up'},
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map(c=>`
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="${c.icon}"/></svg>${c.label}</div>
+      <div class="kpi-value">${c.val}<span>${c.unit}</span></div>
+      <div class="kpi-sub ${c.subCls}">${c.sub}</div>
+    </div>`).join('');
+}
+
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+function renderCharts(){
+  const g=getGroup();
+  const active=g.members.filter(x=>x.visits>0).sort((a,b)=>b.rev-a.rev);
+  const top10=active.slice(0,10);
+
+  destroyChart('rev'); destroyChart('conv'); destroyChart('monthly'); destroyChart('weekly');
+
+  // Revenue chart
+  charts['rev']=new Chart(document.getElementById('chart-rev'),{
+    type:'bar',
+    data:{labels:top10.map(m=>m.ten.split(' ').slice(-2).join(' ')),
+      datasets:[{label:'Doanh thu (M)',data:top10.map(m=>m.rev),
+        backgroundColor:top10.map((_,i)=>i===0?'#4f8ef7':i===1?'#3ecf8e':i===2?'#a78bfa':'#2a3550'),
+        borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}M VND`}}},
+      scales:{x:{ticks:{color:'#8892a4',font:{size:10},maxRotation:30},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#8892a4',font:{size:10},callback:v=>v+'M'},grid:{color:'rgba(255,255,255,0.06)'},border:{display:false}}}}
+  });
+
+  // Conversion chart
+  const sortedConv=[...active].sort((a,b)=>b.conv-a.conv).slice(0,10);
+  charts['conv']=new Chart(document.getElementById('chart-conv'),{
+    type:'bar',
+    data:{labels:sortedConv.map(m=>m.ten.split(' ').slice(-2).join(' ')),
+      datasets:[{label:'Conv%',data:sortedConv.map(m=>m.conv),
+        backgroundColor:sortedConv.map(m=>m.conv>=85?'#3ecf8e':m.conv>=60?'#f5a623':'#f05252'),
+        borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}%`}}},
+      scales:{x:{min:0,max:100,ticks:{color:'#8892a4',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.06)'},border:{display:false}},
+              y:{ticks:{color:'#8892a4',font:{size:10}},grid:{display:false}}}}
+  });
+
+  // Monthly trends
+  const months=['T1','T2','T3','T4'];
+  const datasets=active.slice(0,6).map((m,i)=>({
+    label:m.ten.split(' ').pop(), data:m.monthly,
+    borderColor:AVATAR_COLORS[i], backgroundColor:'transparent',
+    borderWidth:1.5, pointRadius:3, tension:0.3
+  }));
+  charts['monthly']=new Chart(document.getElementById('chart-monthly'),{
+    type:'line', data:{labels:months,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8892a4',font:{size:10},boxWidth:10,padding:12}}},
+      scales:{x:{ticks:{color:'#8892a4',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#8892a4',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'},border:{display:false}}}}
+  });
+
+  // Note CRM bars
+  const noteSorted=[...active].sort((a,b)=>b.note_bad_pct-a.note_bad_pct).slice(0,8);
+  document.getElementById('note-bars').innerHTML = noteSorted.map(m=>`
+    <div class="note-row">
+      <div class="note-meta">
+        <span style="color:var(--text2);font-size:11px">${m.ten.split(' ').slice(-2).join(' ')}</span>
+        <span style="color:${m.note_bad_pct>80?'#f05252':m.note_bad_pct>30?'#f5a623':'#3ecf8e'};font-size:11px">${m.note_bad_pct}% kém</span>
+      </div>
+      <div class="note-bar-wrap">
+        <div class="nb-good" style="width:${100-m.note_bad_pct}%"></div>
+        <div class="nb-bad" style="width:${m.note_bad_pct}%"></div>
+      </div>
+    </div>`).join('')+`
+    <div style="display:flex;gap:14px;margin-top:12px;font-size:10px;color:var(--text3)">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#3ecf8e;display:inline-block"></span>Note tốt</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#f05252;display:inline-block"></span>Note kém</span>
+    </div>`;
+}
+
+function renderNVTable(){
+  const g=getGroup();
+  const sorted=[...g.members].sort((a,b)=>b.rev-a.rev);
+  const maxRev=Math.max(...sorted.map(x=>x.rev),1);
+  const tbody=document.getElementById('nv-tbody');
+  tbody.innerHTML=sorted.map((m,i)=>{
+    const sparkH=Math.max(...m.weekly,1);
+    const spark=m.weekly.map(v=>{
+      const h=v?Math.max(3,Math.round(v/sparkH*22)):2;
+      const col=v?'#4f8ef7':'#1c2030';
+      return `<div class="spark-b" style="height:${h}px;background:${col}"></div>`;
+    }).join('');
+    const statusBadge=m.visits===0?'<span class="badge err">Không HĐ</span>':
+      m.note_bad_pct>=80?'<span class="badge err">Note kém</span>':
+      m.conv<30?'<span class="badge warn">Conv thấp</span>':
+      m.conv>=90&&m.rev>300?'<span class="badge ok">Xuất sắc</span>':
+      m.rev>500?'<span class="badge ok">DT cao</span>':'<span class="badge off">Bình thường</span>';
+    const barW=Math.round(m.rev/maxRev*100);
+    const ac=avatarColor(i); const init=initials(m.ten);
+    return `<tr>
+      <td><div class="name-cell"><div class="avatar" style="background:${ac}20;color:${ac}">${init}</div><div><div style="font-weight:500">${m.ten}</div><div style="font-size:10px;color:var(--text3)">${m.mnv} · ${m.tuoi_nghe}y</div></div></div></td>
+      <td class="r mono">${m.visits.toLocaleString('vi')}</td>
+      <td class="r"><div class="rev-bar-wrap"><div class="rev-bar-bg"><div class="rev-bar-fill" style="width:${barW}%"></div></div><span style="font-family:var(--mono);font-size:12px;min-width:46px;text-align:right">${m.rev}M</span></div></td>
+      <td class="r mono">${m.orders}</td>
+      <td class="r" style="color:${m.conv>=85?'#3ecf8e':m.conv>=60?'#f5a623':'#f05252'};font-family:var(--mono)">${m.conv}%</td>
+      <td class="r mono">${m.avg_dur}ph</td>
+      <td><div style="display:flex;align-items:center;gap:6px"><div style="width:40px;height:5px;border-radius:3px;background:var(--bg4);overflow:hidden"><div style="width:${m.note_bad_pct}%;height:100%;background:${m.note_bad_pct>80?'#f05252':m.note_bad_pct>30?'#f5a623':'#3ecf8e'}"></div></div><span style="font-size:11px;color:${m.note_bad_pct>80?'#f05252':m.note_bad_pct>30?'#f5a623':'#3ecf8e'}">${m.note_bad_pct}%</span></div></td>
+      <td class="r mono" style="color:${m.off_hours>=15?'#f05252':m.off_hours>=5?'#f5a623':'var(--text3)'}">${m.off_hours}</td>
+      <td class="r mono" style="color:${m.gps_same/Math.max(m.visits,1)>=0.3?'#f05252':m.gps_same>=50?'#f5a623':'var(--text3)'}">${m.gps_same}</td>
+      <td><div class="spark">${spark}</div></td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+function hmColor(v,mx){
+  if(!v) return '#1a1f2e';
+  const r=v/mx;
+  if(r<0.2) return '#1a3550';
+  if(r<0.4) return '#1e5a7a';
+  if(r<0.6) return '#1a7faa';
+  if(r<0.8) return '#2196d3';
+  return '#4fc3f7';
+}
+function hmText(v,mx){
+  if(!v) return '#555f72';
+  return v/mx>=0.4?'#fff':'#9ecfed';
+}
+
+function renderTrend(){
+  const g=getGroup();
+  const wks=g.weeks.map(w=>w.split('\n')[0]);
+  const active=g.members.filter(x=>x.weekly.some(v=>v>0));
+  const mx=Math.max(...active.flatMap(m=>m.weekly),1);
+
+  // Heatmap
+  const cols=1+wks.length;
+  let html=`<div class="heatmap-grid" style="grid-template-columns:140px repeat(${wks.length},1fr)">`;
+  html+=`<div class="hm-head" style="text-align:left;padding-left:4px">Nhân viên</div>`;
+  wks.forEach(w=>{ html+=`<div class="hm-head">${w}</div>`; });
+  active.sort((a,b)=>b.weekly.reduce((s,v)=>s+v,0)-a.weekly.reduce((s,v)=>s+v,0)).forEach(m=>{
+    html+=`<div class="hm-name">${m.ten.split(' ').slice(-2).join(' ')}</div>`;
+    m.weekly.forEach(v=>{
+      const bg=hmColor(v,mx); const tc=hmText(v,mx);
+      html+=`<div class="hm-cell" style="background:${bg};color:${tc}">${v||'—'}</div>`;
+    });
+  });
+  html+='</div>';
+  document.getElementById('heatmap-container').innerHTML=html;
+
+  // Weekly total line
+  const totals=wks.map((_,i)=>active.reduce((s,m)=>s+(m.weekly[i]||0),0));
+  destroyChart('weekly');
+  charts['weekly']=new Chart(document.getElementById('chart-weekly'),{
+    type:'line',
+    data:{labels:wks,datasets:[{label:'Tổng đơn toàn nhóm',data:totals,
+      borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,0.08)',
+      fill:true,borderWidth:2,pointRadius:4,pointBackgroundColor:'#4f8ef7',tension:0.3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw} đơn`}}},
+      scales:{x:{ticks:{color:'#8892a4',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#8892a4',font:{size:10}},grid:{color:'rgba(255,255,255,0.06)'},border:{display:false}}}}
+  });
+}
+
+function renderAlerts(){
+  const g=getGroup();
+  const alerts=[];
+  const noAct=g.members.filter(x=>x.visits===0);
+  if(noAct.length) alerts.push({type:'err',icon:'⛔',title:`${noAct.length} NV không có hoạt động: ${noAct.map(x=>x.ten).join(', ')}`,sub:'0 visit trong toàn bộ kỳ báo cáo T1–T4/2026'});
+  const badNote=g.members.filter(x=>x.visits>0&&x.note_bad_pct>=80);
+  if(badNote.length) alerts.push({type:'err',icon:'📝',title:`${badNote.length} NV có note CRM kém >80%`,sub:badNote.map(x=>`${x.ten} (${x.note_bad_pct}%)`).join(' · ')});
+  const lowConv=g.members.filter(x=>x.visits>100&&x.conv<30);
+  lowConv.forEach(m=>alerts.push({type:'err',icon:'📉',title:`${m.ten}: Conversion ${m.conv}%`,sub:`${m.kh_visit} KH thăm, chỉ ${m.kh_buy} KH mua hàng — cần coaching gấp`}));
+  const offH=g.members.filter(x=>x.off_hours>=10);
+  offH.forEach(m=>alerts.push({type:'warn',icon:'🕐',title:`${m.ten}: ${m.off_hours} check-in ngoài giờ`,sub:'Check-in trước 7h hoặc sau 20h — cần xác minh tính xác thực'}));
+  const gpsHigh=g.members.filter(x=>x.visits>0&&x.gps_same/x.visits>=0.3);
+  gpsHigh.forEach(m=>alerts.push({type:'warn',icon:'📍',title:`${m.ten}: GPS trùng ${m.gps_same}/${m.visits} visits (${Math.round(m.gps_same/m.visits*100)}%)`,sub:'Tọa độ check-in = checkout — nghi vấn không di chuyển thực sự'}));
+  const stoppedNV=g.members.filter(x=>x.visits>50&&x.weekly.slice(4).every(v=>v===0));
+  stoppedNV.forEach(m=>alerts.push({type:'warn',icon:'⚠️',title:`${m.ten}: Ngừng hoạt động từ T15`,sub:'Không có đơn hàng trong 4 tuần gần nhất (W15–W18)'}));
+  const cont=document.getElementById('alerts-container');
+  if(!alerts.length){ cont.innerHTML='<div style="color:var(--text3);padding:20px;text-align:center">Không có cảnh báo nào cho nhóm này.</div>'; return; }
+  cont.innerHTML=alerts.map(a=>`
+    <div class="alert-item ${a.type}">
+      <div class="alert-icon">${a.icon}</div>
+      <div><div class="alert-title">${a.title}</div><div class="alert-sub">${a.sub}</div></div>
+    </div>`).join('');
+}
+
+function renderAll(){
+  renderKPI(); renderCharts(); renderNVTable(); renderTrend(); renderAlerts();
+  // Update group info in sidebar
+  DATA.groups.forEach((g,i)=>{
+    const s=groupStats(g);
+    const el=document.getElementById(`g${i}-info`);
+    if(el) el.textContent=`${g.members.length} NV · ${s.totalRev.toFixed(0)}M VND`;
+  });
+}
+
+function switchGroup(idx, btn){
+  currentGroup=idx;
+  document.querySelectorAll('.group-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tb-title').textContent=getGroup().name+' — Báo cáo hành vi bán hàng';
+  renderAll();
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(name==='trend') renderTrend();
+}
+
+renderAll();
+</script>
+</body>
+</html>

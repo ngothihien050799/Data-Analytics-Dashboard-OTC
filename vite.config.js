@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/process': 'http://127.0.0.1:5000',
+      '/process_hanh_vi': 'http://127.0.0.1:5000',
       '/config': 'http://127.0.0.1:5000'
     }
   }

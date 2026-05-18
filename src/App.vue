@@ -26,7 +26,9 @@ import {
 import ConfigModal from "./components/ConfigModal.vue";
 import ResultTable from "./components/ResultTable.vue";
 import ExplanationModal from "./components/ExplanationModal.vue";
+import HanhViDashboard from "./components/HanhViDashboard.vue";
 
+const currentAppTab = ref("phan_loai");
 const file = ref(null);
 const isDragging = ref(false);
 const showConfig = ref(false);
@@ -84,7 +86,8 @@ const processFile = async () => {
       customers_with_orders: response.data.stats?.customers_with_orders ?? 0,
       customers_with_calls: response.data.stats?.customers_with_calls ?? 0,
       customers_with_both: response.data.stats?.customers_with_both ?? 0,
-      customers_order_no_call: response.data.stats?.customers_order_no_call ?? 0,
+      customers_order_no_call:
+        response.data.stats?.customers_order_no_call ?? 0,
       total_revenue: response.data.stats?.total_revenue ?? 0,
       total_orders: response.data.stats?.total_orders ?? 0,
       total_calls: response.data.stats?.total_calls ?? 0,
@@ -107,14 +110,20 @@ const processFile = async () => {
       if (data.traceback) {
         console.error("Server Traceback:", data.traceback);
       }
-    } else if (err.code === "ERR_NETWORK" || err.message.includes("Network Error")) {
-      errorMessage.value = "Không thể kết nối đến server. Vui lòng đảm bảo app.py đang chạy (Port 5000).";
+    } else if (
+      err.code === "ERR_NETWORK" ||
+      err.message.includes("Network Error")
+    ) {
+      errorMessage.value =
+        "Không thể kết nối đến server. Vui lòng đảm bảo app.py đang chạy (Port 5000).";
     } else if (err.response?.status === 500) {
-      errorMessage.value = "Lỗi Server (500). Có thể do Backend (app.py) chưa được khởi động hoặc gặp lỗi xử lý.";
+      errorMessage.value =
+        "Lỗi Server (500). Có thể do Backend (app.py) chưa được khởi động hoặc gặp lỗi xử lý.";
     } else if (err.code === "ECONNABORTED") {
       errorMessage.value = "Yêu cầu quá hạn. Vui lòng thử lại.";
     } else {
-      errorMessage.value = "Có lỗi xảy ra. Hãy chắc chắn bạn đã chạy 'npm run dev:all' hoặc đã khởi động app.py.";
+      errorMessage.value =
+        "Có lỗi xảy ra. Hãy chắc chắn bạn đã chạy 'npm run dev:all' hoặc đã khởi động app.py.";
     }
   } finally {
     loading.value = false;
@@ -131,6 +140,24 @@ const processFile = async () => {
         </div>
         <h3>Data Analytics Dashboard</h3>
       </div>
+
+      <div class="module-tabs">
+        <button
+          class="module-tab"
+          :class="{ active: currentAppTab === 'phan_loai' }"
+          @click="currentAppTab = 'phan_loai'"
+        >
+          Chấm điểm Khách hàng
+        </button>
+        <button
+          class="module-tab"
+          :class="{ active: currentAppTab === 'hanh_vi' }"
+          @click="currentAppTab = 'hanh_vi'"
+        >
+          Phân tích Hành vi
+        </button>
+      </div>
+
       <div class="header-right">
         <!-- <a href="https://drive.google.com/drive/folders/1FJCHDyb4mM7uAADZzVy6fzuKzU4pJFcR" target="_blank" class="icon-btn btn-secondary" title="Mở tài liệu hướng dẫn">
           <ExternalLink size="20" />
@@ -155,227 +182,262 @@ const processFile = async () => {
       </div>
     </header>
 
-    <main class="glass-card">
+    <div v-show="currentAppTab === 'phan_loai'" class="module-container">
+      <main class="glass-card">
+        <div
+          class="upload-zone"
+          :class="{ active: isDragging, 'has-file': file }"
+          @dragover.prevent="isDragging = true"
+          @dragleave.prevent="isDragging = false"
+          @drop.prevent="onDrop"
+          @click="$refs.fileInput.click()"
+        >
+          <input
+            type="file"
+            ref="fileInput"
+            hidden
+            accept=".xlsx, .xls"
+            @change="onFileChange"
+          />
+
+          <div v-if="!file" class="upload-prompt-compact">
+            <Upload :size="24" color="#6366f1" />
+            <p><span>Chọn file Excel</span> hoặc kéo thả tại đây</p>
+          </div>
+
+          <div v-else class="file-selected-compact">
+            <FileSpreadsheet :size="24" color="#10b981" />
+            <p class="filename-compact">{{ file.name }}</p>
+            <button
+              class="btn-process-mini"
+              @click.stop="processFile"
+              :disabled="loading"
+            >
+              <template v-if="loading">
+                <Loader2 class="animate-spin" :size="16" />
+              </template>
+              <template v-else>
+                <Download v-if="status === 'success'" :size="16" />
+                <span>{{
+                  status === "success" ? "Xử lý lại" : "Bắt đầu"
+                }}</span>
+              </template>
+            </button>
+          </div>
+        </div>
+
+        <!-- Compact feedback area -->
+        <div v-if="status === 'success'" class="feedback-compact success">
+          <CheckCircle :size="14" color="#10b981" />
+          <p>Xử lý thành công! Dữ liệu đã sẵn sàng.</p>
+        </div>
+
+        <div v-if="status === 'error'" class="feedback-compact error">
+          <AlertCircle :size="14" color="#ef4444" />
+          <p>{{ errorMessage }}</p>
+        </div>
+      </main>
+
       <div
-        class="upload-zone"
-        :class="{ active: isDragging, 'has-file': file }"
-        @dragover.prevent="isDragging = true"
-        @dragleave.prevent="isDragging = false"
-        @drop.prevent="onDrop"
-        @click="$refs.fileInput.click()"
+        v-if="status === 'success' && dataNhanvien && dataNhanvien.length > 0"
+        class="employee-info glass-card mb-4 mt-4"
       >
-        <input
-          type="file"
-          ref="fileInput"
-          hidden
-          accept=".xlsx, .xls"
-          @change="onFileChange"
-        />
-
-        <div v-if="!file" class="upload-prompt-compact">
-          <Upload :size="24" color="#6366f1" />
-          <p><span>Chọn file Excel</span> hoặc kéo thả tại đây</p>
-        </div>
-
-        <div v-else class="file-selected-compact">
-          <FileSpreadsheet :size="24" color="#10b981" />
-          <p class="filename-compact">{{ file.name }}</p>
-          <button class="btn-process-mini" @click.stop="processFile" :disabled="loading">
-             <template v-if="loading">
-              <Loader2 class="animate-spin" :size="16" />
-            </template>
-            <template v-else>
-              <Download v-if="status === 'success'" :size="16" />
-              <span>{{ status === 'success' ? 'Xử lý lại' : 'Bắt đầu' }}</span>
-            </template>
-          </button>
+        <h3
+          class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2"
+        >
+          <User :size="20" /> Thông Tin Nhân Viên
+        </h3>
+        <div class="nv-table-wrapper">
+          <table class="nv-table">
+            <thead>
+              <tr>
+                <th v-for="col in nvHeaders" :key="col">{{ col }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(nv, idx) in dataNhanvien" :key="idx">
+                <td
+                  v-for="col in nvHeaders"
+                  :key="col"
+                  class="font-medium text-white"
+                >
+                  {{
+                    nv[col] !== null && nv[col] !== undefined ? nv[col] : "-"
+                  }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <!-- Compact feedback area -->
-      <div v-if="status === 'success'" class="feedback-compact success">
-        <CheckCircle :size="14" color="#10b981" />
-        <p>Xử lý thành công! Dữ liệu đã sẵn sàng.</p>
+      <!-- Monthly Statistics Section -->
+      <div v-if="stats" class="stats-container mb-4 mt-4">
+        <h3
+          class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2"
+        >
+          <TrendingUp :size="20" /> Thống Kê Hoạt Động Tháng
+          {{ stats.month }}/{{ stats.year }}
+        </h3>
+        <div class="stats-grid">
+          <div class="stats-card">
+            <div class="stats-icon bg-blue-500/20 text-blue-400">
+              <Users :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Tổng khách hàng</p>
+              <h4 class="stats-value">
+                {{ stats.total_customers.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-green-500/20 text-green-400">
+              <ShoppingBag :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">KH có đơn</p>
+              <h4 class="stats-value">
+                {{ stats.customers_with_orders.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-purple-500/20 text-purple-400">
+              <PhoneCall :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">KH có Call</p>
+              <h4 class="stats-value">
+                {{ stats.customers_with_calls.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-indigo-500/20 text-indigo-400">
+              <CheckCircle2 :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Call có đơn</p>
+              <h4 class="stats-value">
+                {{ stats.customers_with_both.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-red-500/20 text-red-400">
+              <UserX :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Đơn không Call</p>
+              <h4 class="stats-value">
+                {{ stats.customers_order_no_call.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-orange-500/20 text-orange-400">
+              <ShoppingCart :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Tổng đơn</p>
+              <h4 class="stats-value">
+                {{ stats.total_orders.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-pink-500/20 text-pink-400">
+              <Hash :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Tổng Call</p>
+              <h4 class="stats-value">
+                {{ stats.total_calls.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-cyan-500/20 text-cyan-400">
+              <UserPlus :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Vãng lai có đơn</p>
+              <h4 class="stats-value">
+                {{ stats.casual_with_orders.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+
+          <div class="stats-card">
+            <div class="stats-icon bg-teal-500/20 text-teal-400">
+              <UserMinus :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Vãng lai có Call</p>
+              <h4 class="stats-value">
+                {{ stats.casual_with_calls.toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+          <div class="stats-card stats-card-wide">
+            <div class="stats-icon bg-yellow-500/20 text-yellow-400">
+              <TrendingUp :size="20" />
+            </div>
+            <div class="stats-info">
+              <p class="stats-label">Tổng doanh số</p>
+              <h4 class="stats-value">
+                {{ Math.round(stats.total_revenue).toLocaleString("vi-VN") }}
+              </h4>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div v-if="status === 'error'" class="feedback-compact error">
-        <AlertCircle :size="14" color="#ef4444" />
-        <p>{{ errorMessage }}</p>
-      </div>
-    </main>
+      <ResultTable
+        v-if="status === 'success' && dataTonghop && dataChamdiem && fileB64"
+        :data-tonghop="dataTonghop"
+        :data-chamdiem="dataChamdiem"
+        :data-casual-orders="dataCasualOrders"
+        :data-casual-calls="dataCasualCalls"
+        :file-b64="fileB64"
+      />
 
-    <div
-      v-if="status === 'success' && dataNhanvien && dataNhanvien.length > 0"
-      class="employee-info glass-card mb-4 mt-4"
-    >
-      <h3
-        class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2"
-      >
-        <User :size="20" /> Thông Tin Nhân Viên
-      </h3>
-      <div class="nv-table-wrapper">
-        <table class="nv-table">
-          <thead>
-            <tr>
-              <th v-for="col in nvHeaders" :key="col">{{ col }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(nv, idx) in dataNhanvien" :key="idx">
-              <td
-                v-for="col in nvHeaders"
-                :key="col"
-                class="font-medium text-white"
-              >
-                {{ nv[col] !== null && nv[col] !== undefined ? nv[col] : "-" }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <section class="features" v-else-if="status !== 'success'">
+        <div class="feature-item">
+          <h3>📊 Thống kê Tổng hợp</h3>
+          <p>
+            Tự động tính toán Recency, Frequency, Monetary và Chu kỳ mua hàng
+            dựa trên lịch sử đơn hàng.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h3>⭐ Chấm điểm & Xếp hạng</h3>
+          <p>
+            Chấm điểm khách hàng theo công thức RFM chuẩn hóa, phân loại
+            VIP/Gold/Normal chính xác.
+          </p>
+        </div>
+        <div class="feature-item">
+          <h3>⚙️ Cấu hình Linh hoạt</h3>
+          <p>
+            Mọi tham số tính toán đều được tham chiếu từ file Cấu_hình.xlsx, dễ
+            dàng điều chỉnh.
+          </p>
+        </div>
+      </section>
     </div>
 
-    <!-- Monthly Statistics Section -->
-    <div v-if="stats" class="stats-container mb-4 mt-4">
-      <h3 class="flex items-center gap-2 mb-3 text-indigo-400 border-b border-indigo-500/20 pb-2">
-        <TrendingUp :size="20" /> Thống Kê Hoạt Động Tháng {{ stats.month }}/{{ stats.year }}
-      </h3>
-      <div class="stats-grid">
-      <div class="stats-card">
-        <div class="stats-icon bg-blue-500/20 text-blue-400">
-          <Users :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Tổng khách hàng</p>
-          <h4 class="stats-value">{{ stats.total_customers.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-green-500/20 text-green-400">
-          <ShoppingBag :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">KH có đơn</p>
-          <h4 class="stats-value">{{ stats.customers_with_orders.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-purple-500/20 text-purple-400">
-          <PhoneCall :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">KH có Call</p>
-          <h4 class="stats-value">{{ stats.customers_with_calls.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-indigo-500/20 text-indigo-400">
-          <CheckCircle2 :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Call có đơn</p>
-          <h4 class="stats-value">{{ stats.customers_with_both.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-red-500/20 text-red-400">
-          <UserX :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Đơn không Call</p>
-          <h4 class="stats-value">{{ stats.customers_order_no_call.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-     
-
-      <div class="stats-card">
-        <div class="stats-icon bg-orange-500/20 text-orange-400">
-          <ShoppingCart :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Tổng đơn</p>
-          <h4 class="stats-value">{{ stats.total_orders.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-pink-500/20 text-pink-400">
-          <Hash :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Tổng Call</p>
-          <h4 class="stats-value">{{ stats.total_calls.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-cyan-500/20 text-cyan-400">
-          <UserPlus :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Vãng lai có đơn</p>
-          <h4 class="stats-value">{{ stats.casual_with_orders.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-
-      <div class="stats-card">
-        <div class="stats-icon bg-teal-500/20 text-teal-400">
-          <UserMinus :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Vãng lai có Call</p>
-          <h4 class="stats-value">{{ stats.casual_with_calls.toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-       <div class="stats-card stats-card-wide">
-        <div class="stats-icon bg-yellow-500/20 text-yellow-400">
-          <TrendingUp :size="20" />
-        </div>
-        <div class="stats-info">
-          <p class="stats-label">Tổng doanh số</p>
-          <h4 class="stats-value">{{ Math.round(stats.total_revenue).toLocaleString('vi-VN') }}</h4>
-        </div>
-      </div>
-      </div>
+    <div v-show="currentAppTab === 'hanh_vi'" class="module-container">
+      <HanhViDashboard />
     </div>
-
-    <ResultTable
-      v-if="status === 'success' && dataTonghop && dataChamdiem && fileB64"
-      :data-tonghop="dataTonghop"
-      :data-chamdiem="dataChamdiem"
-      :data-casual-orders="dataCasualOrders"
-      :data-casual-calls="dataCasualCalls"
-      :file-b64="fileB64"
-    />
-
-    <section class="features" v-else-if="status !== 'success'">
-      <div class="feature-item">
-        <h3>📊 Thống kê Tổng hợp</h3>
-        <p>
-          Tự động tính toán Recency, Frequency, Monetary và Chu kỳ mua hàng dựa
-          trên lịch sử đơn hàng.
-        </p>
-      </div>
-      <div class="feature-item">
-        <h3>⭐ Chấm điểm & Xếp hạng</h3>
-        <p>
-          Chấm điểm khách hàng theo công thức RFM chuẩn hóa, phân loại
-          VIP/Gold/Normal chính xác.
-        </p>
-      </div>
-      <div class="feature-item">
-        <h3>⚙️ Cấu hình Linh hoạt</h3>
-        <p>
-          Mọi tham số tính toán đều được tham chiếu từ file Cấu_hình.xlsx, dễ
-          dàng điều chỉnh.
-        </p>
-      </div>
-    </section>
 
     <ConfigModal :show="showConfig" @close="showConfig = false" />
     <ExplanationModal
@@ -408,6 +470,40 @@ const processFile = async () => {
   background: linear-gradient(to right, #fff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.module-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 0.3rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.module-tab {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.module-tab:hover {
+  color: #e2e8f0;
+}
+
+.module-tab.active {
+  background: #6366f1;
+  color: white;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+.module-container {
+  animation: fadeIn 0.3s ease-out;
 }
 
 .header-left {
@@ -462,7 +558,8 @@ const processFile = async () => {
   background: rgba(15, 23, 42, 0.2);
 }
 
-.upload-zone:hover, .upload-zone.active {
+.upload-zone:hover,
+.upload-zone.active {
   border-color: #6366f1;
   background: rgba(99, 102, 241, 0.05);
 }
@@ -525,7 +622,6 @@ const processFile = async () => {
 }
 
 .feedback-compact {
-  
   padding: 0 1rem;
   border-radius: 8px;
   display: flex;
@@ -736,24 +832,64 @@ const processFile = async () => {
 }
 
 /* Color utilities if not using tailwind properly */
-.bg-blue-500\/20 { background: rgba(59, 130, 246, 0.2); }
-.text-blue-400 { color: #60a5fa; }
-.bg-green-500\/20 { background: rgba(16, 185, 129, 0.2); }
-.text-green-400 { color: #4ade80; }
-.bg-purple-500\/20 { background: rgba(168, 85, 247, 0.2); }
-.text-purple-400 { color: #c084fc; }
-.bg-indigo-500\/20 { background: rgba(99, 102, 241, 0.2); }
-.text-indigo-400 { color: #818cf8; }
-.bg-red-500\/20 { background: rgba(239, 68, 68, 0.2); }
-.text-red-400 { color: #f87171; }
-.bg-yellow-500\/20 { background: rgba(234, 179, 8, 0.2); }
-.text-yellow-400 { color: #facc15; }
-.bg-pink-500\/20 { background: rgba(236, 72, 153, 0.2); }
-.text-pink-400 { color: #f472b6; }
-.bg-orange-500\/20 { background: rgba(249, 115, 22, 0.2); }
-.text-orange-400 { color: #fb923c; }
-.bg-cyan-500\/20 { background: rgba(6, 182, 212, 0.2); }
-.text-cyan-400 { color: #22d3ee; }
-.bg-teal-500\/20 { background: rgba(20, 184, 166, 0.2); }
-.text-teal-400 { color: #2dd4bf; }
+.bg-blue-500\/20 {
+  background: rgba(59, 130, 246, 0.2);
+}
+.text-blue-400 {
+  color: #60a5fa;
+}
+.bg-green-500\/20 {
+  background: rgba(16, 185, 129, 0.2);
+}
+.text-green-400 {
+  color: #4ade80;
+}
+.bg-purple-500\/20 {
+  background: rgba(168, 85, 247, 0.2);
+}
+.text-purple-400 {
+  color: #c084fc;
+}
+.bg-indigo-500\/20 {
+  background: rgba(99, 102, 241, 0.2);
+}
+.text-indigo-400 {
+  color: #818cf8;
+}
+.bg-red-500\/20 {
+  background: rgba(239, 68, 68, 0.2);
+}
+.text-red-400 {
+  color: #f87171;
+}
+.bg-yellow-500\/20 {
+  background: rgba(234, 179, 8, 0.2);
+}
+.text-yellow-400 {
+  color: #facc15;
+}
+.bg-pink-500\/20 {
+  background: rgba(236, 72, 153, 0.2);
+}
+.text-pink-400 {
+  color: #f472b6;
+}
+.bg-orange-500\/20 {
+  background: rgba(249, 115, 22, 0.2);
+}
+.text-orange-400 {
+  color: #fb923c;
+}
+.bg-cyan-500\/20 {
+  background: rgba(6, 182, 212, 0.2);
+}
+.text-cyan-400 {
+  color: #22d3ee;
+}
+.bg-teal-500\/20 {
+  background: rgba(20, 184, 166, 0.2);
+}
+.text-teal-400 {
+  color: #2dd4bf;
+}
 </style>
