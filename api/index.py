@@ -645,8 +645,20 @@ def handle_process_hanh_vi():
         import tempfile
         import os
         import uuid
+        import gzip
+
         temp_path = os.path.join(tempfile.gettempdir(), f'temp_hanhvi_{uuid.uuid4().hex}.xlsx')
-        file.save(temp_path)
+
+        is_compressed = request.headers.get('x-content-encoding') == 'gzip'
+
+        if is_compressed:
+            # Decompress gzip-encoded file sent from frontend
+            compressed_data = file.read()
+            decompressed_data = gzip.decompress(compressed_data)
+            with open(temp_path, 'wb') as f:
+                f.write(decompressed_data)
+        else:
+            file.save(temp_path)
         
         result = process_hanh_vi_data(temp_path)
         

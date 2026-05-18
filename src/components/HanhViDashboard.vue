@@ -138,17 +138,40 @@ const onDrop = (e) => {
   }
 };
 
+const compressFile = async (file) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const stream = new Blob([arrayBuffer]).stream();
+  const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
+  const compressedBlob = await new Response(compressedStream).blob();
+  return compressedBlob;
+};
+
 const processFile = async () => {
   if (!file.value) return;
   loading.value = true;
   status.value = "uploading";
   errorMessage.value = "";
 
-  const formData = new FormData();
-  formData.append("file", file.value);
-
   try {
-    const response = await axios.post("/process_hanh_vi", formData);
+    let uploadBlob = file.value;
+    let useCompression = false;
+
+    // Compress if file > 3MB to stay under Vercel's 4.5MB limit
+    if (file.value.size > 3 * 1024 * 1024) {
+      uploadBlob = await compressFile(file.value);
+      useCompression = true;
+    }
+
+    const formData = new FormData();
+    formData.append("file", uploadBlob, file.value.name);
+
+    const headers = {};
+    if (useCompression) {
+      headers["x-content-encoding"] = "gzip";
+      headers["x-file-name"] = file.value.name;
+    }
+
+    const response = await axios.post("/process_hanh_vi", formData, { headers });
     rawData.value = response.data;
     status.value = "success";
     currentGroupIndex.value = 0;
@@ -164,6 +187,7 @@ const processFile = async () => {
     loading.value = false;
   }
 };
+
 
 const onReuploadChange = async (e) => {
   const selectedFile = e.target.files[0];
