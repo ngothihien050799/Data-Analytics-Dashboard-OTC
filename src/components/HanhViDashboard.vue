@@ -41,12 +41,12 @@ const avatarColor = (name, i) => {
   if (!name) return AVATAR_COLORS[i % AVATAR_COLORS.length];
   const lastWord = name.trim().split(" ").pop();
   const nameColorMap = {
-    "Duyên": "#3b82f6",
-    "Huy": "#10b981",
-    "Nguyên": "#818cf8",
-    "Bách": "#f59e0b",
-    "Nam": "#06b6d4",
-    "Tuấn": "#ef4444",
+    Duyên: "#3b82f6",
+    Huy: "#10b981",
+    Nguyên: "#818cf8",
+    Bách: "#f59e0b",
+    Nam: "#06b6d4",
+    Tuấn: "#ef4444",
   };
   return nameColorMap[lastWord] || AVATAR_COLORS[i % AVATAR_COLORS.length];
 };
@@ -299,16 +299,17 @@ const renderAllCharts = () => {
     const ctxMonthly = document.getElementById("chart-monthly");
     if (ctxMonthly) {
       const nameColorMap = {
-        "Duyên": "#3b82f6",
-        "Huy": "#10b981",
-        "Nguyên": "#818cf8",
-        "Bách": "#f59e0b",
-        "Nam": "#06b6d4",
-        "Tuấn": "#ef4444",
+        Duyên: "#3b82f6",
+        Huy: "#10b981",
+        Nguyên: "#818cf8",
+        Bách: "#f59e0b",
+        Nam: "#06b6d4",
+        Tuấn: "#ef4444",
       };
       const datasets = active.slice(0, 6).map((m, i) => {
         const lastWord = m.ten.split(" ").pop();
-        const color = nameColorMap[lastWord] || AVATAR_COLORS[i % AVATAR_COLORS.length];
+        const color =
+          nameColorMap[lastWord] || AVATAR_COLORS[i % AVATAR_COLORS.length];
         return {
           label: lastWord,
           data: m.monthly,
@@ -1108,9 +1109,9 @@ const getBadgeHTML = (m) => {
                           </div>
                           <div>
                             <div class="font-medium">{{ m.ten }}</div>
-                            <div class="text-[10px] text-text3">
-                              {{ m.mnv }} · {{ m.tuoi_nghe }}y
-                            </div>
+                             <div style="font-size: 11px; color: #555f72; font-weight: normal">
+                               {{ m.mnv }} · {{ m.tuoi_nghe }}y
+                             </div>
                           </div>
                         </div>
                       </td>
@@ -1251,19 +1252,31 @@ const getBadgeHTML = (m) => {
                     <span class="legend-text">0</span>
                   </div>
                   <div class="legend-item">
-                    <span class="color-swatch" style="background: #1a3550"></span>
+                    <span
+                      class="color-swatch"
+                      style="background: #1a3550"
+                    ></span>
                     <span class="legend-text">Thấp</span>
                   </div>
                   <div class="legend-item">
-                    <span class="color-swatch" style="background: #1a7faa"></span>
+                    <span
+                      class="color-swatch"
+                      style="background: #1a7faa"
+                    ></span>
                     <span class="legend-text">TB</span>
                   </div>
                   <div class="legend-item">
-                    <span class="color-swatch" style="background: #2196d3"></span>
+                    <span
+                      class="color-swatch"
+                      style="background: #2196d3"
+                    ></span>
                     <span class="legend-text">Cao</span>
                   </div>
                   <div class="legend-item">
-                    <span class="color-swatch" style="background: #4fc3f7"></span>
+                    <span
+                      class="color-swatch"
+                      style="background: #4fc3f7"
+                    ></span>
                     <span class="legend-text">Đỉnh</span>
                   </div>
                 </div>
@@ -2134,5 +2147,84 @@ table.nv-table td.mono {
   font-size: 11px;
   color: #555f72;
   font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .sidebar {
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .sidebar-logo {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .logo-mark {
+    margin-bottom: 0;
+  }
+  .nav-section {
+    padding: 8px;
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-label {
+    display: none;
+  }
+  .nav-item {
+    margin-bottom: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .group-switcher {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    white-space: nowrap;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-overflow-scrolling: touch;
+  }
+  .group-switcher > div {
+    display: none;
+  }
+  .group-btn {
+    width: auto;
+    display: inline-block;
+    margin-bottom: 0;
+    padding: 6px 10px;
+  }
+  .topbar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 16px;
+  }
+  .content {
+    padding: 12px 16px;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-row,
+  .charts-row.thirds {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
