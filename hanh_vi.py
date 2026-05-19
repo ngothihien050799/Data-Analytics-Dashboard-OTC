@@ -12,8 +12,8 @@ def process_hanh_vi_data(file_path):
         
         with xl:
             df_nv = pd.read_excel(xl, '1_NhanVien', dtype=str)
-            df_call = pd.read_excel(xl, '2_Call', dtype={'MNV': str, 'Mã KH': str})
-            df_order = pd.read_excel(xl, '3_DonHang', dtype={'MNV': str, 'Mã KH': str})
+            df_call = pd.read_excel(xl, '2_Call', dtype={'MNV': str, 'Mã KH': str, 'KHCN': str})
+            df_order = pd.read_excel(xl, '3_DonHang', dtype={'MNV': str, 'Mã KH': str, 'Mã KHCN': str})
         
         def clean_id(x):
             if pd.isna(x): return ""
@@ -21,14 +21,21 @@ def process_hanh_vi_data(file_path):
             if s.endswith('.0'): s = s[:-2]
             return s
 
-        for col in ['MNV', 'Mã KH']:
+        def get_base_order_id(val):
+            s = clean_id(val)
+            if '.' in s:
+                parts = s.split('.')
+                if parts[-1].isdigit():
+                    return ".".join(parts[:-1])
+            return s
+
+        for col in ['MNV', 'Mã KH', 'KHCN', 'Mã KHCN']:
             if col in df_nv.columns: df_nv[col] = df_nv[col].apply(clean_id)
             if col in df_call.columns: df_call[col] = df_call[col].apply(clean_id)
             if col in df_order.columns: df_order[col] = df_order[col].apply(clean_id)
             
         if 'Mã ĐH' in df_order.columns:
-            # Chuẩn hóa và cắt lấy đúng 14 ký tự đầu tiên để gom nhóm đơn hàng trùng nhau
-            df_order['Mã ĐH'] = df_order['Mã ĐH'].apply(clean_id).str[:14]
+            df_order['Mã ĐH'] = df_order['Mã ĐH'].apply(get_base_order_id)
             
         df_call['Thời gian checkin'] = pd.to_datetime(df_call['Thời gian checkin'], errors='coerce')
         df_call['Thời gian checkout'] = pd.to_datetime(df_call['Thời gian checkout'], errors='coerce')
@@ -85,25 +92,12 @@ def process_hanh_vi_data(file_path):
             diff = (row['Thời gian checkout'] - row['Thời gian checkin']).total_seconds()
             return max(0, diff / 60)
             
-        def check_gps_same(row):
-            lat_in = row.get('Tọa độ checkin lat')
-            lng_in = row.get('Tọa độ checkin lng')
-            lat_out = row.get('Tọa độ checkout lat')
-            lng_out = row.get('Tọa độ checkout lng')
-            if pd.notna(lat_in) and pd.notna(lng_in) and pd.notna(lat_out) and pd.notna(lng_out):
-                try:
-                    return 1 if (float(lat_in) == float(lat_out) and float(lng_in) == float(lng_out)) else 0
-                except:
-                    return 0
-            return 0
-            
         df_call['Duration_ph'] = df_call.apply(get_duration, axis=1)
         df_call['Is_Bad_Note'] = df_call['Ghi chú'].apply(is_bad_note)
         df_call['Out_Of_Hours'] = df_call['Thời gian checkin'].apply(
             lambda x: 1 if pd.notna(x) and (x.hour < 7 or x.hour >= 18) else 0
         )
         df_call['Under_5m'] = df_call['Duration_ph'].apply(lambda x: 1 if x < 5 and x > 0 else 0)
-        df_call['GPS_Same'] = df_call.apply(check_gps_same, axis=1)
         
         df_call['Tháng'] = df_call['Thời gian checkin'].dt.month
         months_available = sorted([int(m) for m in df_call['Tháng'].dropna().unique() if m >= 1 and m <= 12])
@@ -165,7 +159,7 @@ def process_hanh_vi_data(file_path):
             check_ngoai_gio = nv_calls['Out_Of_Hours'].sum()
             off_hours_list = []
             if check_ngoai_gio > 0:
-                off_calls = nv_calls[nv_calls['Out_Of_Hours'] == 1].sort_values(by='Thời gian checkin')
+                off_calls = nv_calls[nv_calls['Out_Of_Hours'] == 1].sort_values(by='Thời gian checkin', ascending=False)
                 for _, c_row in off_calls.iterrows():
                     dt_ci = c_row['Thời gian checkin']
                     dt_co = c_row['Thời gian checkout']
@@ -186,7 +180,6 @@ def process_hanh_vi_data(file_path):
                     })
 
             visit_duoi_5p = nv_calls['Under_5m'].sum()
-            gps_same = nv_calls['GPS_Same'].sum()
             
             # Monthly visits
             monthly_arr = []
@@ -220,7 +213,6 @@ def process_hanh_vi_data(file_path):
                 "off_hours": int(check_ngoai_gio),
                 "off_hours_list": off_hours_list,
                 "short_visits": int(visit_duoi_5p),
-                "gps_same": int(gps_same),
                 "monthly": [int(x) for x in monthly_arr],
                 "weekly": [int(x) for x in weekly_arr],
                 "weekly_rev": [float(x) for x in weekly_rev_arr]
@@ -316,7 +308,7 @@ def process_hanh_vi_data(file_path):
                         "rev": float(round(rev, 1)),
                         "qty": int(qty)
                     })
-                nv_prod_sorted = sorted(nv_prod_list, key=lambda x: x['rev'], reverse=True)[:5]
+                nv_prod_sorted = sorted(nv_prod_list, key=lambda x: x['rev'], reverse=True)
                 nv_top5[str(mnv)] = nv_prod_sorted
                 
             # 4. Map Employee codes to names (nv_info)
@@ -324,11 +316,143 @@ def process_hanh_vi_data(file_path):
             for m in g_data["members"]:
                 nv_info[str(m["mnv"])] = str(m["ten"])
                 
+            # 5. Calculate Conversion Metrics (Khai phá -> Đơn hàng)
+            g_calls = df_call[df_call['MNV'].isin(group_mnvs)]
+            g_orders = df_order[df_order['MNV'].isin(group_mnvs)]
+            
+            # Ensure columns exist
+            if 'KHCN' not in g_calls.columns:
+                g_calls = g_calls.copy()
+                g_calls['KHCN'] = ""
+            if 'Mã KHCN' not in g_orders.columns:
+                g_orders = g_orders.copy()
+                g_orders['Mã KHCN'] = ""
+                
+            g_calls_exploration = g_calls[g_calls['Tên KH'] == 'Khách hàng khai phá']
+            
+            g_calls_clean = g_calls[
+                g_calls['Mã KH'].notna() & 
+                (g_calls['Mã KH'].astype(str).str.strip() != "") &
+                (g_calls['Mã KH'].astype(str).str.strip().str.len() < 8) &
+                (g_calls['Tên KH'] == 'Khách hàng khai phá')
+            ]
+            called_ma_khs = set(g_calls_clean['Mã KH'].astype(str).str.strip().unique())
+            
+            g_orders_clean = g_orders[g_orders['Mã KH'].notna() & (g_orders['Mã KH'].astype(str).str.strip() != "")]
+            ordered_ma_khs = set(g_orders_clean['Mã KH'].astype(str).str.strip().unique())
+            
+            converted_ma_khs = called_ma_khs.intersection(ordered_ma_khs)
+            
+            total_calls_khcn = len(called_ma_khs)
+            total_checks_khcn = len(g_calls_exploration)
+            converted_khcn_count = len(converted_ma_khs)
+            
+            g_exploration_rate = (total_calls_khcn / total_checks_khcn * 100) if total_checks_khcn > 0 else 0
+            g_conv_rate = (converted_khcn_count / total_calls_khcn * 100) if total_calls_khcn > 0 else 0
+            g_total_rate = (converted_khcn_count / total_checks_khcn * 100) if total_checks_khcn > 0 else 0
+            
+            g_conv_orders = g_orders_clean[g_orders_clean['Mã KH'].isin(converted_ma_khs)]
+            g_conv_rev = g_conv_orders['Doanh Thu'].sum() / 1000000
+            
+            member_conversions = []
+            for member_info in g_data["members"]:
+                m_mnv = member_info["mnv"]
+                m_ten = member_info["ten"]
+                
+                m_calls_clean = g_calls_clean[g_calls_clean['MNV'] == m_mnv]
+                m_called_ma_khs = set(m_calls_clean['Mã KH'].astype(str).str.strip().unique())
+                
+                m_orders_clean = g_orders_clean[g_orders_clean['MNV'] == m_mnv]
+                m_ordered_ma_khs = set(m_orders_clean['Mã KH'].astype(str).str.strip().unique())
+                
+                m_converted_ma_khs = m_called_ma_khs.intersection(m_ordered_ma_khs)
+                m_called_count = len(m_called_ma_khs)
+                m_checks_count = len(g_calls_exploration[g_calls_exploration['MNV'] == m_mnv])
+                m_converted_count = len(m_converted_ma_khs)
+                
+                m_exploration_rate = (m_called_count / m_checks_count * 100) if m_checks_count > 0 else 0
+                m_conv_rate = (m_converted_count / m_called_count * 100) if m_called_count > 0 else 0
+                m_total_rate = (m_converted_count / m_checks_count * 100) if m_checks_count > 0 else 0
+                
+                m_conv_orders = m_orders_clean[m_orders_clean['Mã KH'].isin(m_converted_ma_khs)]
+                m_conv_rev = m_conv_orders['Doanh Thu'].sum() / 1000000
+                
+                member_conversions.append({
+                    "mnv": str(m_mnv),
+                    "ten": str(m_ten),
+                    "called_count": int(m_called_count),
+                    "checks_count": int(m_checks_count),
+                    "exploration_rate": float(round(m_exploration_rate, 1)),
+                    "converted_count": int(m_converted_count),
+                    "conversion_rate": float(round(m_conv_rate, 1)),
+                    "total_rate": float(round(m_total_rate, 1)),
+                    "revenue": float(round(m_conv_rev, 2))
+                })
+            
+            conversion_details = []
+            guid_info = {}
+            for _, row_c in g_calls_clean.iterrows():
+                ma_kh = str(row_c['Mã KH']).strip()
+                if ma_kh not in guid_info:
+                    guid_info[ma_kh] = {
+                        "khcn_name": str(row_c.get('KHCN.1', '')).strip() if pd.notna(row_c.get('KHCN.1')) else "",
+                        "ma_kh": ma_kh,
+                        "ten_kh": str(row_c.get('KHCN.1', '')).strip() if pd.notna(row_c.get('KHCN.1')) else "",
+                        "latest_call_time": row_c['Thời gian checkin']
+                    }
+                else:
+                    if pd.notna(row_c['Thời gian checkin']) and (pd.isna(guid_info[ma_kh]["latest_call_time"]) or row_c['Thời gian checkin'] < guid_info[ma_kh]["latest_call_time"]):
+                        guid_info[ma_kh]["latest_call_time"] = row_c['Thời gian checkin']
+                        
+            for ma_kh in converted_ma_khs:
+                info = guid_info.get(ma_kh, {"khcn_name": "", "ma_kh": ma_kh, "ten_kh": "", "latest_call_time": pd.NaT})
+                cust_orders = g_orders_clean[g_orders_clean['Mã KH'] == ma_kh]
+                cust_mnvs = cust_orders['MNV'].unique()
+                cust_nv_names = [nv_info.get(str(m), str(m)) for m in cust_mnvs]
+                
+                latest_order_time = cust_orders['Ngày đặt'].min()  # Use min to get the oldest order date
+                total_rev = cust_orders['Doanh Thu'].sum() / 1000000
+                base_order_ids = cust_orders['Mã ĐH'].dropna().unique().tolist()
+                
+                # Fetch Tên KH from 3_DonHang (sheet of orders) as requested
+                ten_kh_dh = ""
+                if not cust_orders.empty:
+                    valid_ten_khs = cust_orders['Tên KH'].dropna().tolist()
+                    if valid_ten_khs:
+                        ten_kh_dh = str(valid_ten_khs[0]).strip()
+                
+                conversion_details.append({
+                    "khcn_guid": ma_kh,
+                    "khcn_name": info["khcn_name"],
+                    "ma_kh": ma_kh,
+                    "ten_kh": ten_kh_dh if ten_kh_dh else info["ten_kh"],
+                    "nv_names": ", ".join(cust_nv_names),
+                    "latest_call_time": info["latest_call_time"].strftime('%d/%m/%Y %H:%M') if pd.notna(info["latest_call_time"]) else "—",
+                    "latest_order_time": latest_order_time.strftime('%d/%m/%Y %H:%M') if pd.notna(latest_order_time) else "—",
+                    "base_order_ids": base_order_ids,
+                    "revenue": float(round(total_rev, 2))
+                })
+                
+            conversion_details = sorted(conversion_details, key=lambda x: x['revenue'], reverse=True)
+            
+            conversion_module = {
+                "total_calls_khcn": int(total_calls_khcn),
+                "total_checks_khcn": int(total_checks_khcn),
+                "exploration_rate": float(round(g_exploration_rate, 1)),
+                "converted_khcn_count": int(converted_khcn_count),
+                "conversion_rate": float(round(g_conv_rate, 1)),
+                "total_rate": float(round(g_total_rate, 1)),
+                "revenue": float(round(g_conv_rev, 2)),
+                "member_conversions": member_conversions,
+                "conversion_details": conversion_details
+            }
+                
             # Inject stats into the group structure
             g_data["products"] = products_list
             g_data["kenh"] = kenh_list
             g_data["nv_top5"] = nv_top5
             g_data["nv_info"] = nv_info
+            g_data["conversion_module"] = conversion_module
 
         # Trả về kết quả
         def clean_dict(d):
@@ -343,8 +467,21 @@ def process_hanh_vi_data(file_path):
             else:
                 return d
                 
+        # Calculate dynamic date range from check-in data
+        valid_checkins = df_call['Thời gian checkin'].dropna()
+        if not valid_checkins.empty:
+            min_date = valid_checkins.min()
+            max_date = valid_checkins.max()
+            min_month = min_date.month
+            max_month = max_date.month
+            year = max_date.year
+            date_range = f"T{min_month}–T{max_month}/{year}"
+        else:
+            date_range = ""
+        
         raw_result = {
             "groups": list(groups_dict.values()),
+            "date_range": date_range,
             "Status": "Success"
         }
         

@@ -21,7 +21,45 @@ const errorMessage = ref("");
 const rawData = ref(null); // { groups: [...] }
 const currentGroupIndex = ref(0);
 const activeView = ref("overview");
+const conversionSearch = ref("");
+const conversionSelectedMnv = ref("");
+
+const filteredConversionDetails = computed(() => {
+  const g = currentGroup.value;
+  if (!g || !g.conversion_module || !g.conversion_module.conversion_details)
+    return [];
+
+  let list = g.conversion_module.conversion_details;
+
+  if (conversionSelectedMnv.value) {
+    const selectedMember = g.members.find(
+      (m) => m.mnv === conversionSelectedMnv.value,
+    );
+    if (selectedMember) {
+      const name = selectedMember.ten;
+      list = list.filter((item) => item.nv_names.includes(name));
+    }
+  }
+
+  const query = conversionSearch.value.trim().toLowerCase();
+  if (query) {
+    list = list.filter((item) => {
+      return (
+        item.khcn_name.toLowerCase().includes(query) ||
+        item.ma_kh.toLowerCase().includes(query) ||
+        item.ten_kh.toLowerCase().includes(query) ||
+        item.nv_names.toLowerCase().includes(query) ||
+        (item.base_order_ids &&
+          item.base_order_ids.some((id) => id.toLowerCase().includes(query)))
+      );
+    });
+  }
+
+  return list;
+});
+
 const charts = ref({});
+const processedAt = ref("");
 const isFullscreen = ref(false);
 const toggleFullscreen = () => {
   isFullscreen.value = !isFullscreen.value;
@@ -97,7 +135,6 @@ const groupStats = computed(() => {
     noteBadPct: active.length
       ? active.reduce((s, x) => s + x.note_bad_pct, 0) / active.length
       : 0,
-    gpsIssues: m.reduce((s, x) => s + x.gps_same, 0),
     offHours: m.reduce((s, x) => s + x.off_hours, 0),
   };
 });
@@ -176,6 +213,9 @@ const processFile = async () => {
     });
     rawData.value = response.data;
     status.value = "success";
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    processedAt.value = `${pad(now.getHours())}:${pad(now.getMinutes())} ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${String(now.getFullYear()).slice(-2)}`;
     currentGroupIndex.value = 0;
     activeView.value = "overview";
     await nextTick();
@@ -255,22 +295,41 @@ const renderNVSpChart = () => {
   const pd = currentGroup.value;
   if (!pd || !selectedEmployeeId.value || !pd.nv_top5) return;
 
-  const top5 = pd.nv_top5[selectedEmployeeId.value] || [];
-  if (!top5.length) return;
+  const allProds = pd.nv_top5[selectedEmployeeId.value] || [];
+  if (!allProds.length) return;
 
   const ctxNvSp = document.getElementById("chart-nv-sp");
   if (ctxNvSp) {
-    const COLS = ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#14b8a6"];
-    const totalNVRev = top5.reduce((s, p) => s + p.rev, 0);
+    const COLS = [
+      "#3b82f6",
+      "#10b981",
+      "#f59e0b",
+      "#a855f7",
+      "#14b8a6",
+      "#64748b",
+    ];
+    const top5 = allProds.slice(0, 5);
+    const rest = allProds.slice(5);
+    const restRev = rest.reduce((s, p) => s + p.rev, 0);
+    const totalNVRev = allProds.reduce((s, p) => s + p.rev, 0);
+
+    const chartLabels = top5.map((p) => p.ten);
+    const chartData = top5.map((p) => p.rev);
+    const chartColors = COLS.slice(0, top5.length);
+    if (rest.length > 0 && restRev > 0) {
+      chartLabels.push(`Khác (${rest.length} SP)`);
+      chartData.push(parseFloat(restRev.toFixed(1)));
+      chartColors.push(COLS[5]);
+    }
 
     charts.value["nv-sp"] = new Chart(ctxNvSp, {
       type: "doughnut",
       data: {
-        labels: top5.map((p) => p.ten.split(" ").slice(0, 3).join(" ")),
+        labels: chartLabels,
         datasets: [
           {
-            data: top5.map((p) => p.rev),
-            backgroundColor: COLS,
+            data: chartData,
+            backgroundColor: chartColors,
             borderWidth: 2,
             borderColor: "#0f172a",
             hoverOffset: 4,
@@ -284,7 +343,10 @@ const renderNVSpChart = () => {
         animation: {
           duration: 1500,
           easing: "easeOutExpo",
-          delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 100 : 0,
+          delay: (context) =>
+            context.type === "data" && context.mode === "default"
+              ? context.dataIndex * 100
+              : 0,
         },
         plugins: {
           legend: { display: false },
@@ -362,7 +424,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 50
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -415,7 +480,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 50
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -477,7 +545,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.datasetIndex * 100 + context.dataIndex * 30 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.datasetIndex * 100 + context.dataIndex * 30
+                : 0,
           },
           plugins: {
             legend: {
@@ -541,7 +612,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 50
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -596,7 +670,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 50
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -666,7 +743,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 50
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -724,7 +804,10 @@ const renderAllCharts = () => {
           animation: {
             duration: 1500,
             easing: "easeOutExpo",
-            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 100 : 0,
+            delay: (context) =>
+              context.type === "data" && context.mode === "default"
+                ? context.dataIndex * 100
+                : 0,
           },
           plugins: {
             legend: { display: false },
@@ -875,17 +958,6 @@ const generatedAlerts = computed(() => {
       details: m.off_hours_list || [],
     }),
   );
-  const gpsHigh = g.members.filter(
-    (x) => x.visits > 0 && x.gps_same / x.visits >= 0.3,
-  );
-  gpsHigh.forEach((m) =>
-    alerts.push({
-      type: "warn",
-      icon: "📍",
-      title: `${m.ten}: GPS trùng ${m.gps_same}/${m.visits} visits (${Math.round((m.gps_same / m.visits) * 100)}%)`,
-      sub: "Tọa độ check-in = checkout — nghi vấn không di chuyển thực sự",
-    }),
-  );
   const stoppedNV = g.members.filter(
     (x) => x.visits > 50 && x.weekly.slice(-4).every((v) => v === 0),
   );
@@ -948,6 +1020,28 @@ const guideCategories = [
         name: "Ngừng hoạt động (Inactive Alert)",
         desc: "Hệ thống tự động phát hiện nhân viên có lịch sử kinh doanh tích cực nhưng không phát sinh bất kỳ đơn hàng nào trong 4 tuần liên tục gần nhất.",
         formula: "Doanh số 4 tuần gần nhất = 0",
+      },
+    ],
+  },
+  {
+    id: "behavior1",
+    title: "Tỷ lệ chuyển đổi",
+    items: [
+      {
+        name: "Tỷ lệ khai phá thành công",
+        desc: "",
+        formula: "(Số khách hàng khai phá / Số call đã check) * 100",
+      },
+      {
+        name: "Tỷ lệ chuyển đổi",
+        desc: "Hiệu quả bán hàng",
+        formula: "(Đơn chốt thành công / Số khách hàng khai phá) * 100",
+      },
+
+      {
+        name: "Tỷ lệ chốt tổng",
+        desc: "Hiệu quả toàn pipeline",
+        formula: "(Đơn chốt thành công / Số call đã check) * 100",
       },
     ],
   },
@@ -1164,7 +1258,7 @@ const getBadgeHTML = (m) => {
         <div class="sidebar-logo">
           <div class="logo-mark">OTC</div>
           <h1>Sales Dashboard</h1>
-          <p>T1–T4 / 2026</p>
+          <p>{{ rawData?.date_range || "" }}</p>
         </div>
 
         <div class="nav-section">
@@ -1257,6 +1351,23 @@ const getBadgeHTML = (m) => {
           </div>
           <div
             class="nav-item"
+            :class="{ active: activeView === 'conversion' }"
+            @click="activeView = 'conversion'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            Chuyển đổi
+          </div>
+          <div
+            class="nav-item"
             :class="{ active: activeView === 'guide' }"
             @click="activeView = 'guide'"
           >
@@ -1303,14 +1414,15 @@ const getBadgeHTML = (m) => {
         <div class="topbar">
           <div>
             <div class="topbar-title">
-              {{ currentGroup.name }} — Báo cáo hành vi bán hàng
+              {{ currentGroup.name }}
             </div>
             <div class="topbar-sub">
-              Dữ liệu từ hệ thống CRM & đơn hàng · T1–T4/2026
+              Dữ liệu từ hệ thống CRM & đơn hàng ·
+              {{ rawData?.date_range || "" }}
             </div>
           </div>
           <div class="topbar-right">
-            <div class="timestamp">Cập nhật: Mới nhất</div>
+            <div class="timestamp">{{ processedAt || "" }}</div>
             <div class="badge-live">Phân tích thực</div>
             <button class="btn-fullscreen" @click="toggleFullscreen">
               <component
@@ -1384,7 +1496,9 @@ const getBadgeHTML = (m) => {
                 <div class="kpi-value">
                   {{ groupStats.totalRev.toFixed(1) }}<span>M</span>
                 </div>
-                <div class="kpi-sub neutral">VND T1–T4/2026</div>
+                <div class="kpi-sub neutral">
+                  VND {{ rawData?.date_range || "" }}
+                </div>
               </div>
               <!-- KPI 3 -->
               <div class="kpi-card c-teal">
@@ -1606,7 +1720,7 @@ const getBadgeHTML = (m) => {
                 <div class="card-head">
                   <div>
                     <div class="card-title">Visit theo tháng</div>
-                    <div class="card-sub">T1 → T4/2026</div>
+                    <div class="card-sub">{{ rawData?.date_range || "" }}</div>
                   </div>
                 </div>
                 <div class="chart-wrap" style="height: 200px">
@@ -1685,7 +1799,6 @@ const getBadgeHTML = (m) => {
                       <th class="r">Avg visit</th>
                       <th>Note CRM</th>
                       <th class="r">Ngoài giờ</th>
-                      <th class="r">GPS ≡</th>
                       <th>Xu hướng</th>
                       <th>Trạng thái</th>
                     </tr>
@@ -1795,19 +1908,6 @@ const getBadgeHTML = (m) => {
                         }"
                       >
                         {{ m.off_hours }}
-                      </td>
-                      <td
-                        class="r mono"
-                        :style="{
-                          color:
-                            m.visits > 0 && m.gps_same / m.visits >= 0.3
-                              ? '#f05252'
-                              : m.gps_same >= 50
-                                ? '#f5a623'
-                                : 'var(--text3)',
-                        }"
-                      >
-                        {{ m.gps_same }}
                       </td>
                       <td>
                         <div class="spark">
@@ -2034,7 +2134,9 @@ const getBadgeHTML = (m) => {
                 <div class="kpi-value">
                   {{ currentGroup.products?.length || 0 }}<span> sản phẩm</span>
                 </div>
-                <div class="kpi-sub neutral">Trong kỳ T1–T4/2026</div>
+                <div class="kpi-sub neutral">
+                  Trong kỳ {{ rawData?.date_range || "" }}
+                </div>
               </div>
               <!-- Card 2 -->
               <div class="kpi-card c-teal">
@@ -2187,7 +2289,7 @@ const getBadgeHTML = (m) => {
                         <div
                           style="
                             font-weight: 500;
-                            font-size: 12px;
+                            font-size: 11px;
                             line-height: 1.4;
                           "
                         >
@@ -2336,16 +2438,16 @@ const getBadgeHTML = (m) => {
                       color: var(--text3);
                       padding: 20px;
                       text-align: center;
-                      font-size: 12px;
+                      font-size: 11px;
                     "
                   >
                     Không có dữ liệu đơn hàng
                   </div>
                   <div v-else style="padding: 4px 0">
                     <div
-                      v-for="(p, i) in currentGroup.nv_top5?.[
-                        selectedEmployeeId
-                      ] || []"
+                      v-for="(p, i) in (
+                        currentGroup.nv_top5?.[selectedEmployeeId] || []
+                      ).slice(0, 5)"
                       :key="p.ma"
                       style="
                         display: flex;
@@ -2361,7 +2463,7 @@ const getBadgeHTML = (m) => {
                       <div style="flex: 1; min-width: 0">
                         <div
                           style="
-                            font-size: 12px;
+                            font-size: 11px;
                             font-weight: 500;
                             color: var(--text);
                             overflow: hidden;
@@ -2451,7 +2553,7 @@ const getBadgeHTML = (m) => {
                       color: var(--text3);
                       padding: 20px;
                       text-align: center;
-                      font-size: 12px;
+                      font-size: 11px;
                     "
                   >
                     Không có dữ liệu đơn hàng
@@ -2464,9 +2566,9 @@ const getBadgeHTML = (m) => {
                     </div>
                     <div style="margin-top: 10px">
                       <div
-                        v-for="(p, i) in currentGroup.nv_top5?.[
-                          selectedEmployeeId
-                        ] || []"
+                        v-for="(p, i) in (
+                          currentGroup.nv_top5?.[selectedEmployeeId] || []
+                        ).slice(0, 5)"
                         :key="p.ma"
                         style="
                           display: flex;
@@ -2496,11 +2598,52 @@ const getBadgeHTML = (m) => {
                               ][i % 5],
                             }"
                           ></span>
-                          <span class="text-text2">{{
-                            p.ten.split(" ").slice(0, 3).join(" ")
-                          }}</span>
+                          <span class="text-text2">{{ p.ten }}</span>
                         </span>
                         <span class="font-mono text-text">{{ p.rev }}M</span>
+                      </div>
+                      <!-- Khác -->
+                      <div
+                        v-if="
+                          (currentGroup.nv_top5?.[selectedEmployeeId] || [])
+                            .length > 5
+                        "
+                        style="
+                          display: flex;
+                          align-items: center;
+                          justify-content: space-between;
+                          font-size: 11px;
+                          margin-bottom: 5px;
+                        "
+                      >
+                        <span
+                          style="display: flex; align-items: center; gap: 5px"
+                        >
+                          <span
+                            style="
+                              width: 8px;
+                              height: 8px;
+                              border-radius: 50%;
+                              display: inline-block;
+                              background: #64748b;
+                            "
+                          ></span>
+                          <span class="text-text2"
+                            >Khác ({{
+                              (currentGroup.nv_top5?.[selectedEmployeeId] || [])
+                                .length - 5
+                            }}
+                            SP)</span
+                          >
+                        </span>
+                        <span class="font-mono text-text"
+                          >{{
+                            (currentGroup.nv_top5?.[selectedEmployeeId] || [])
+                              .slice(5)
+                              .reduce((s, x) => s + x.rev, 0)
+                              .toFixed(1)
+                          }}M</span
+                        >
                       </div>
                     </div>
                   </div>
@@ -2654,6 +2797,600 @@ const getBadgeHTML = (m) => {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── VIEW: CONVERSION ── -->
+          <div v-if="activeView === 'conversion'" class="fade-in">
+            <div class="section-title">Hiệu quả Chuyển đổi Khai phá (KHCN)</div>
+
+            <div
+              v-if="!currentGroup || !currentGroup.conversion_module"
+              class="text-text3 p-5 text-center"
+            >
+              Chưa có dữ liệu chuyển đổi cho nhóm này.
+            </div>
+
+            <div v-else>
+              <!-- KPI Cards -->
+              <div
+                class="kpi-grid"
+                style="grid-template-columns: repeat(3, 1fr)"
+              >
+                <!-- Card 1 -->
+                <div class="kpi-card c-blue">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <path
+                        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                      />
+                    </svg>
+                    KH khai phá
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.total_calls_khcn }}
+                  </div>
+                  <div class="kpi-sub">
+                    Đã thực hiện
+                    {{ currentGroup.conversion_module.total_checks_khcn }} lượt
+                    check call
+                  </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="kpi-card c-teal">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    Tỷ lệ khai phá
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.exploration_rate }}%
+                  </div>
+                  <div class="kpi-sub">KH khai phá / Lượt check call</div>
+                </div>
+                <!-- Card 3 -->
+                <div class="kpi-card c-green">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                    Đơn chốt thành công
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.converted_khcn_count }}
+                  </div>
+                  <div class="kpi-sub">KHTC phát sinh đơn hàng</div>
+                </div>
+                <!-- Card 4 -->
+                <div class="kpi-card c-amber">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <line x1="18" y1="20" x2="18" y2="10" />
+                      <line x1="12" y1="20" x2="12" y2="4" />
+                      <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    Tỷ lệ chuyển đổi đơn
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.conversion_rate }}%
+                  </div>
+                  <div class="kpi-sub">Đơn chốt / KH khai phá</div>
+                </div>
+                <!-- Card 5 -->
+                <div class="kpi-card c-red">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    Tỷ lệ chốt tổng
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.total_rate }}%
+                  </div>
+                  <div class="kpi-sub">Đơn chốt / Lượt check call</div>
+                </div>
+                <!-- Card 6 -->
+                <div class="kpi-card c-purple">
+                  <div class="kpi-label">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      style="
+                        width: 14px;
+                        height: 14px;
+                        display: inline-block;
+                        vertical-align: text-top;
+                        margin-right: 4px;
+                      "
+                    >
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path
+                        d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+                      />
+                    </svg>
+                    Doanh thu khai phá
+                  </div>
+                  <div class="kpi-value">
+                    {{ currentGroup.conversion_module.revenue.toFixed(1) }}M
+                  </div>
+                  <div class="kpi-sub">Doanh số từ các đơn hàng</div>
+                </div>
+              </div>
+
+              <!-- Main Content: Stacked layout for maximum readability -->
+              <div
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 20px;
+                  margin-top: 20px;
+                "
+              >
+                <!-- Top: Employee Rankings -->
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <div
+                    class="section-title"
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      margin-bottom: 0;
+                      margin-top: 0;
+                    "
+                  >
+                    <span>Hiệu quả theo Nhân viên</span>
+                    <button
+                      v-if="conversionSelectedMnv"
+                      @click="conversionSelectedMnv = ''"
+                      style="
+                        font-size: 11px;
+                        color: var(--accent);
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        text-decoration: underline;
+                        text-transform: none;
+                        letter-spacing: normal;
+                      "
+                    >
+                      Xóa bộ lọc nhân viên
+                    </button>
+                  </div>
+                  <div class="chart-card !p-0" style="margin-bottom: 0">
+                    <div class="table-wrap scrollable-x-nv">
+                      <table class="nv-table" style="width: 100%">
+                        <thead>
+                          <tr>
+                            <th style="font-size: 11px; padding: 10px 8px">
+                              Nhân viên
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Số call đã check
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Số khách hàng khai phá
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Tỷ lệ khai phá
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Đơn chốt thành công
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Tỷ lệ chuyển đổi
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Tỷ lệ chốt tổng
+                            </th>
+                            <th
+                              class="r"
+                              style="font-size: 11px; padding: 10px 8px"
+                            >
+                              Doanh thu khai phá
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(m, i) in currentGroup.conversion_module
+                              .member_conversions"
+                            :key="m.mnv"
+                            @click="
+                              conversionSelectedMnv =
+                                conversionSelectedMnv === m.mnv ? '' : m.mnv
+                            "
+                            style="cursor: pointer; transition: all 0.2s"
+                            :style="{
+                              background:
+                                conversionSelectedMnv === m.mnv
+                                  ? 'rgba(59, 130, 246, 0.15)'
+                                  : '',
+                              boxShadow:
+                                conversionSelectedMnv === m.mnv
+                                  ? 'inset 3px 0 0 var(--accent)'
+                                  : '',
+                            }"
+                          >
+                            <td>
+                              <div class="name-cell">
+                                <div
+                                  class="avatar"
+                                  :style="{
+                                    background: avatarColor(m.ten, i) + '20',
+                                    color: avatarColor(m.ten, i),
+                                  }"
+                                >
+                                  {{ initials(m.ten) }}
+                                </div>
+                                <div>
+                                  <div class="font-medium">{{ m.ten }}</div>
+                                  <div
+                                    style="font-size: 10px; color: var(--text3)"
+                                  >
+                                    Mã NV: {{ m.mnv }}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                padding: 12px 8px;
+                                color: var(--accent);
+                              "
+                            >
+                              {{ m.checks_count }}
+                            </td>
+                            <td
+                              class="r mono"
+                              style="font-size: 13px; padding: 12px 8px"
+                            >
+                              {{ m.called_count }}
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                padding: 12px 8px;
+                                color: var(--teal);
+                                font-weight: 500;
+                              "
+                            >
+                              {{ m.exploration_rate }}%
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                color: var(--emerald);
+                                padding: 12px 8px;
+                              "
+                            >
+                              {{ m.converted_count }}
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                color: var(--amber);
+                                font-weight: 700;
+                                padding: 12px 8px;
+                              "
+                            >
+                              {{ m.conversion_rate }}%
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                color: var(--red);
+                                font-weight: 600;
+                                padding: 12px 8px;
+                              "
+                            >
+                              {{ m.total_rate }}%
+                            </td>
+                            <td
+                              class="r mono"
+                              style="
+                                font-size: 13px;
+                                color: var(--purple);
+                                padding: 12px 8px;
+                                font-weight: 600;
+                              "
+                            >
+                              {{ m.revenue.toFixed(1) }}M
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom: Converted Details List -->
+                <div class="chart-card" style="padding: 20px">
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      gap: 15px;
+                      margin-bottom: 8px;
+                      flex-wrap: wrap;
+                    "
+                  >
+                    <div
+                      class="section-title"
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 0;
+                        margin-top: 0;
+                      "
+                    >
+                      Danh sách chi tiết khách hàng chuyển đổi
+                      <span
+                        v-if="conversionSelectedMnv"
+                        style="
+                          color: var(--accent);
+                          font-weight: 500;
+                          font-size: 13px;
+                          margin-left: 8px;
+                        "
+                      >
+                        (Đang lọc theo:
+                        {{
+                          currentGroup.members.find(
+                            (x) => x.mnv === conversionSelectedMnv,
+                          )?.ten
+                        }})
+                      </span>
+                    </div>
+                    <input
+                      v-model="conversionSearch"
+                      type="text"
+                      placeholder="Tìm theo Tên KH, Mã KH, Mã đơn..."
+                      style="
+                        background: rgba(15, 23, 42, 0.6);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        color: var(--text);
+                        padding: 8px 16px;
+                        border-radius: 8px;
+                        font-size: 11px;
+                        outline: none;
+                        width: 260px;
+                        transition: all 0.2s;
+                      "
+                      onfocus="this.style.borderColor = 'var(--accent)'"
+                      onblur="
+                        this.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                      "
+                    />
+                  </div>
+
+                  <div
+                    class="table-wrap"
+                    style="max-height: 600px; overflow-y: auto"
+                  >
+                    <div
+                      v-if="filteredConversionDetails.length === 0"
+                      class="text-text3 p-5 text-center text-xs"
+                    >
+                      Không tìm thấy dữ liệu chuyển đổi nào phù hợp.
+                    </div>
+                    <table v-else class="nv-table" style="width: 100%">
+                      <thead>
+                        <tr>
+                          <th style="font-size: 11px; padding: 10px 8px">
+                            Khách hàng tổ chức
+                          </th>
+                          <th style="font-size: 11px; padding: 10px 8px">
+                            KHCN
+                          </th>
+                          <th style="font-size: 11px; padding: 10px 8px">
+                            Nhân viên
+                          </th>
+                          <th style="font-size: 11px; padding: 10px 8px">
+                            Lịch sử
+                          </th>
+                          <th style="font-size: 11px; padding: 10px 8px">
+                            Đơn hàng
+                          </th>
+                          <th
+                            class="r"
+                            style="font-size: 11px; padding: 10px 8px"
+                          >
+                            Tổng doanh số
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="c in filteredConversionDetails"
+                          :key="c.khcn_guid"
+                        >
+                          <td style="padding: 12px 8px">
+                            <div style="color: #e2e8f0; font-size: 11px">
+                              {{ c.ten_kh }}
+                            </div>
+                            <div
+                              style="
+                                font-size: 10px;
+                                color: var(--accent);
+                                font-family: var(--mono);
+                                margin-top: 2px;
+                              "
+                            >
+                              {{ c.ma_kh }}
+                            </div>
+                          </td>
+                          <td style="padding: 12px 8px">
+                            <div
+                              style="
+                                font-size: 11px;
+                                color: var(--text2);
+                                font-weight: 500;
+                              "
+                            >
+                              {{ c.khcn_name || "—" }}
+                            </div>
+                          </td>
+                          <td style="padding: 12px 8px">
+                            <div
+                              style="
+                                font-size: 11px;
+                                color: var(--text2);
+                                font-weight: 500;
+                              "
+                            >
+                              {{ c.nv_names }}
+                            </div>
+                          </td>
+                          <td style="padding: 12px 8px">
+                            <div style="font-size: 11px; color: var(--amber)">
+                              Call: {{ c.latest_call_time }}
+                            </div>
+                            <div
+                              style="
+                                font-size: 11px;
+                                color: var(--emerald);
+                                margin-top: 2px;
+                              "
+                            >
+                              Đơn: {{ c.latest_order_time }}
+                            </div>
+                          </td>
+                          <td style="padding: 12px 8px">
+                            <div
+                              style="
+                                display: flex;
+                                flex-wrap: wrap;
+                                gap: 4px;
+                                max-width: 250px;
+                              "
+                            >
+                              <span
+                                v-for="id in c.base_order_ids"
+                                :key="id"
+                                style="
+                                  background: rgba(168, 85, 247, 0.1);
+                                  border: 1px solid rgba(168, 85, 247, 0.2);
+                                  color: #c084fc;
+                                  font-size: 10px;
+                                  padding: 2px 6px;
+                                  border-radius: 4px;
+                                  font-family: var(--mono);
+                                "
+                              >
+                                {{ id }}
+                              </span>
+                            </div>
+                          </td>
+                          <td
+                            class="r mono"
+                            style="
+                              font-weight: 700;
+                              color: var(--purple);
+                              font-size: 13px;
+                              padding: 12px 8px;
+                            "
+                          >
+                            {{ c.revenue.toFixed(2) }}M
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -2994,7 +3731,7 @@ const getBadgeHTML = (m) => {
   background: transparent;
   color: var(--text2);
   font-family: var(--font);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
@@ -3045,7 +3782,7 @@ const getBadgeHTML = (m) => {
   color: var(--text);
 }
 .topbar-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text3);
   margin-top: 2px;
 }
@@ -3219,7 +3956,7 @@ const getBadgeHTML = (m) => {
   margin-bottom: 16px;
 }
 .card-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text);
 }
@@ -3315,7 +4052,7 @@ const getBadgeHTML = (m) => {
   background: #172138 !important;
 }
 .employee-select {
-  font-size: 12px;
+  font-size: 11px;
   background: var(--bg3);
   color: var(--text);
   border: 1px solid var(--border2);
@@ -3335,7 +4072,7 @@ const getBadgeHTML = (m) => {
 table.nv-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 11px;
 }
 table.nv-table th {
   font-size: 11px;
@@ -3542,7 +4279,7 @@ table.nv-table td.mono {
   margin-top: 1px;
 }
 .alert-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text);
 }
@@ -3713,7 +4450,7 @@ table.nv-table td.mono {
   .nav-item {
     margin-bottom: 0;
     padding: 6px 12px;
-    font-size: 12px;
+    font-size: 11px;
   }
   .group-switcher {
     padding: 8px 12px;

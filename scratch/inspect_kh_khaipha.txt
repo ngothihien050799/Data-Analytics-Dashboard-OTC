@@ -1,0 +1,16 @@
+Columns in 2_Call:
+['STT', 'MNV', 'Tên', 'ID', 'Thời gian checkin', 'Thời gian checkout', 'Mã KH', 'Tên KH', 'Tọa độ checkin lat', 'Tọa độ checkin lng', 'Tọa độ checkout lat', 'Tọa độ checkout lng', 'KHCN', 'KHCN.1', 'Ghi chú']
+
+Matches for 'Tên KH' containing 'Khách hàng khai phá': 547
+Sample rows:
+      MNV            Mã KH               Tên KH                                  KHCN                 KHCN.1
+44  18943  OTC061025/18523  Khách hàng khai phá  b7f75068-5e2e-4574-b4eb-7ac48522a43f       Nhà Thuốc Đức An
+48  18943  OTC061025/18523  Khách hàng khai phá  b4024a63-43cb-451e-bebc-d2d02d9c410d  Nhà Thuốc Quách Thuận
+53  18943  OTC061025/18523  Khách hàng khai phá  08f3bb5d-e5eb-4500-a226-ad688a6d16b8   Nhà Thuốc Hoa Phượng
+58  18943  OTC061025/18523  Khách hàng khai phá  83a25a8d-064f-48d2-ad2b-9a40980ed932     Nhà Thuốc Hoài Thu
+87  18943  OTC061025/18523  Khách hàng khai phá  bc61f5fd-6cba-4ca7-9c03-f080187730a2      Nhà Thuốc Anh Thư
+
+Matches for 'KHCN.1' containing 'Khách hàng khai phá': 0
+Unique values in 'Tên KH' of 2_Call (first 20):
+['Nhà thuốc Hoa Đức', 'Nhà thuốc Hải Đăng 3', 'Hộ kinh doanh Nhà Thuốc Hải Đăng', 'Nhà thuốc Tuệ Minh ', 'Nhà thuốc Nghĩa Hưng HH4A', 'Quầy Thuốc Hùng Hồng', 'Nhà thuốc Bảo Thoa II', 'Quầy thuốc Linh Trang', 'Quầy thuốc Quỳnh Hương', 'Quầy thuốc Ngọc Huyền 05', 'Nhà Thuốc Tâm Lý', 'Nhà thuốc Minh Tú', 'Quầy thuốc Tường An', 'Quầy thuốc Hằng Thủy', 'Quầy thuốc Hồng Quý', 'Nhà thuốc ANHI 1', 'HỘ KINH DOANH NHÀ THUỐC TUỆ LINH', 'Nhà thuốc Tâm Phúc', 'Quầy thuốc Vũ Quang', 'Nhà thuốc Thiên Triệu']
+

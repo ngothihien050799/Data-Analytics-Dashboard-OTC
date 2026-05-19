@@ -1,0 +1,126 @@
+📋 Mô Tả Chi Tiết Các Cột – Báo Cáo Phân Tích Hành Vi Bán Hàng
+Nguồn dữ liệu: File 04-2026_Danh_sách_data_tổng_hợp_khách_hàng_trọng_tâm_nhóm.xlsx
+Kỳ báo cáo: Tháng 01–04/2026
+Dữ liệu gốc: Sheet 1_NhanVien (16 NV) · 2_Call (11.202 visit) · 3_DonHang (8.407 dòng đơn)
+I. Sheet 1 – Tổng Quan
+Sheet tổng hợp dạng dashboard, không có bảng dữ liệu cột-hàng mà gồm 5 KPI card và bảng phát hiện chính.
+KPI Cards
+II. Sheet 2 – Hiệu Quả NV
+Mỗi dòng = 1 nhân viên. Tổng hợp toàn bộ kỳ báo cáo (T1–T4/2026).
+Logic Đánh Giá:
+⛔ Không Hoạt Động → Số Visit = 0
+🚨 Note CRM Kém → Note Xấu% ≥ 80%
+⚠ Conv Thấp → Conv% < 20%
+⭐ Xuất Sắc → Conv% ≥ 90% VÀ Doanh Thu > 300M
+✅ Doanh Thu Cao → Doanh Thu > 500M
+⚠ Ngoài Giờ Nhiều → Check Ngoài Giờ ≥ 15 lần
+➡ Bình Thường → Không rơi vào trường hợp nào trên
+III. Sheet 3 – Xu Hướng Tháng
+Mỗi dòng = 1 nhân viên. Phân tích biến động số visit theo từng tháng.
+IV. Sheet 4 – KH Insights
+Mỗi dòng = 1 cặp (Nhân viên × Khách hàng). Phân tích hiệu quả từng mối quan hệ NV–KH.
+Logic Đánh Giá KH:
+⚠ Nhiều Visit-Không Đơn → Visit > 5 lần VÀ Doanh Thu = 0
+📌 Chưa Chuyển Đổi → Visit > 0 VÀ Doanh Thu = 0
+⭐ Hiệu Quả Cao → Doanh Thu ÷ Số Visit > 5.000.000 VND/visit
+✅ Doanh Thu Tốt → Doanh Thu > 10.000.000 VND
+➡ Bình Thường → Còn lại
+V. Sheet 5 – Bất Thường & Rủi Ro
+Mỗi dòng = 1 vấn đề phát hiện được. Danh sách cảnh báo phân loại theo mức độ.
+VI. Sheet 6 – Chất Lượng Note
+Mỗi dòng = 1 nội dung ghi chú duy nhất. Phân tích toàn bộ ghi chú CRM của nhóm.
+VII. Sheet 7 – Doanh Thu & Đơn Hàng
+Mỗi dòng = 1 nhân viên, sắp xếp theo doanh thu giảm dần.
+VIII. Sheet 8 – Đề Xuất Hành Động
+Mỗi dòng = 1 đề xuất hành động cụ thể.
+IX. Sheet 9 – Xu Hướng 8 Tuần
+Mỗi dòng = 1 nhân viên. Phân tích biến động số đơn hàng và doanh thu theo 8 tuần ISO gần nhất (W11–W18/2026, tức 09/03–29/04/2026).
+⚠ Tuần W18 được đánh dấu * vì chỉ có dữ liệu 3 ngày (27–29/4), không phản ánh đủ 1 tuần đầy đủ. Không dùng W18 để so sánh xu hướng.
+Màu sắc heatmap (cột Đơn & DT):
+Tài liệu này mô tả toàn bộ 9 sheet trong file bao_cao_hanh_vi_ban_hang_04_2026.xlsx
+Tên KPI | Ý nghĩa | Cách tính
+Tổng Số Visit | Tổng lượt nhân viên check-in thăm khách hàng trong kỳ | Đếm tất cả các dòng trong sheet 2_Call
+Tổng Doanh Thu | Tổng giá trị hàng bán ra (đơn vị triệu VND) | SUM(Số lượng × Đơn giá) toàn bộ 3_DonHang ÷ 1.000.000
+Tổng Đơn Hàng | Số đơn hàng duy nhất đã tạo | Đếm Mã ĐH không trùng trong 3_DonHang
+NV Hoạt Động | Số NV có ít nhất 1 visit trong kỳ / Tổng NV | Đếm MNV có visit > 0 trong 2_Call
+Note Kém Chất Lượng | % visit có ghi chú vô nghĩa ("x", "xong", ".") | Số visit có note kém ÷ Tổng visit × 100%
+Cột | Ý nghĩa | Cách tính
+MNV | Mã nhân viên | Lấy từ 1_NhanVien.MNV
+Tên NV | Họ tên đầy đủ | Lấy từ 1_NhanVien.Tên
+Tuổi Nghề | Số tháng/năm kinh nghiệm trong nghề | Lấy từ 1_NhanVien.Tuổi nghề
+Số Visit | Tổng lượt thăm khách hàng của NV | Đếm dòng trong 2_Call theo MNV
+Doanh Thu (M) | Tổng doanh thu của NV, đơn vị triệu VND | SUM(Số lượng × Đơn giá) trong 3_DonHang theo MNV ÷ 1.000.000
+Số Đơn | Số đơn hàng duy nhất NV tạo ra | Đếm Mã ĐH không trùng trong 3_DonHang theo MNV
+KH Thăm | Số khách hàng khác nhau NV đã đến thăm | Đếm Mã KH không trùng trong 2_Call theo MNV
+KH Mua | Số khách hàng thực sự phát sinh đơn hàng | Đếm Mã KH không trùng trong 3_DonHang theo MNV
+Conv% | Tỷ lệ chuyển đổi – bao nhiêu % KH được thăm thực sự mua hàng | KH Mua ÷ KH Thăm × 100%
+Rev/Visit | Doanh thu trung bình mỗi lần thăm khách (VND) | Tổng Doanh Thu ÷ Số Visit
+Avg Duration | Thời gian thăm khách trung bình mỗi visit (phút) | MEAN((Thời gian checkout − Thời gian checkin) / 60) trong 2_Call
+Note Tốt% | % visit có ghi chú chất lượng (≥ 10 ký tự, có nội dung thực) | Số visit note tốt ÷ Tổng visit × 100%
+Note Xấu% | % visit có ghi chú vô nghĩa ("x", "xong", ".", "Hoàn thành nhiệm vụ", v.v.) | Số visit note xấu ÷ Tổng visit × 100%
+Check Ngoài Giờ | Số lần check-in ngoài giờ làm việc (trước 7h sáng hoặc sau 20h tối) | Đếm dòng trong 2_Call có giờ(checkin) < 7 hoặc > 20
+Visit <5p | Số visit có thời lượng dưới 5 phút – nghi vấn check-in không thực tế | Đếm dòng trong 2_Call có (checkout − checkin) < 5 phút
+GPS Trùng | Số visit có tọa độ check-in = tọa độ checkout (không di chuyển) | Đếm dòng có lat_checkin = lat_checkout VÀ lng_checkin = lng_checkout
+Đánh Giá | Xếp loại tổng hợp tự động dựa trên các chỉ số trên | Xem logic bên dưới ↓
+Cột | Ý nghĩa | Cách tính
+MNV | Mã nhân viên | Lấy từ 1_NhanVien
+Tên NV | Họ tên | Lấy từ 1_NhanVien
+T1/2026 → T4/2026 | Số visit trong tháng tương ứng | Đếm dòng 2_Call theo MNV có tháng(checkin) = T
+Tổng | Tổng visit 4 tháng | T1 + T2 + T3 + T4
+Xu Hướng | Chiều hướng hoạt động qua 4 tháng | So sánh (T3+T4) vs (T1+T2): tăng >10% → 📈, giảm >10% → 📉, T3+T4=0 → ⬇ Dừng, T1+T2=0 → 🆕 Mới, còn lại → ➡ Ổn Định
+Cột | Ý nghĩa | Cách tính
+MNV | Mã nhân viên | Từ 2_Call
+Tên NV | Họ tên nhân viên | Từ 2_Call
+Mã KH | Mã định danh khách hàng | Từ 2_Call.Mã KH
+Tên KH | Tên nhà thuốc / quầy thuốc | Từ 2_Call.Tên KH
+Số Visit | NV này đã thăm KH này bao nhiêu lần | Đếm dòng 2_Call theo cặp (MNV, Mã KH)
+Có Đơn? | KH này có phát sinh đơn hàng với NV này không | "Có" nếu tồn tại dòng trong 3_DonHang cùng (MNV, Mã KH); "Không" nếu ngược lại
+Doanh Thu | Tổng doanh thu từ KH này (VND, số nguyên đầy đủ) | SUM(Số lượng × Đơn giá) trong 3_DonHang theo cặp (MNV, Mã KH)
+Đánh Giá KH | Xếp loại mối quan hệ NV–KH | Xem logic bên dưới ↓
+Cột | Ý nghĩa | Cách tính / Nguồn
+Mức Độ | Mức độ nghiêm trọng của vấn đề | 3 cấp: 🚨 NGHIÊM TRỌNG / ⚠ TRUNG BÌNH / 📌 THEO DÕI
+MNV | Mã nhân viên liên quan | Từ dữ liệu 2_Call hoặc 1_NhanVien
+Tên NV | Họ tên nhân viên | Từ 1_NhanVien
+Loại Bất Thường | Phân loại ngắn gọn vấn đề | Danh mục: Không có visit / Note CRM kém / Check-in ngoài giờ / Conversion thấp / Visit <5p / GPS trùng
+Chi Tiết | Mô tả cụ thể vấn đề | Sinh tự động theo loại
+Số Lượng | Số lần/trường hợp xảy ra bất thường | Đếm theo loại tương ứng
+Ghi Chú | Thông tin bổ sung định lượng | Ví dụ: "Tỷ lệ note xấu: 98%", "Conv: 9% (10/106 KH)"
+Hành Động | Khuyến nghị xử lý | Gợi ý cụ thể theo loại bất thường
+Cột | Ý nghĩa | Cách tính
+Ghi Chú | Nội dung ghi chú nhân viên nhập vào app sau mỗi visit | Lấy từ 2_Call.Ghi chú, đã dedup
+Số Lần | Ghi chú này xuất hiện bao nhiêu lần trong toàn bộ dữ liệu | COUNT theo nội dung ghi chú trong 2_Call
+Tỷ Lệ% | Tỷ lệ phần trăm trên tổng số visit | Số Lần ÷ Tổng số visit × 100%
+Chất Lượng | Xếp loại chất lượng nội dung | ✅ Có Giá Trị: ≥ 10 ký tự, nội dung thực; ⚠ Ngắn: < 10 ký tự; ❌ Kém: nằm trong danh sách đen ("x", "xong", ".", "Hoàn thành nhiệm vụ", v.v.)
+Mức Độ Rủi Ro | Mức độ ảnh hưởng đến chất lượng CRM | 🚨 Cao: note kém + xuất hiện > 500 lần; ⚠ TB: note không tốt + > 100 lần; ✅ Thấp: còn lại
+Cột | Ý nghĩa | Cách tính
+MNV | Mã nhân viên | Từ 1_NhanVien
+Tên NV | Họ tên | Từ 1_NhanVien
+Doanh Thu (VND) | Tổng doanh thu tuyệt đối, đơn vị đồng | SUM(Số lượng × Đơn giá) trong 3_DonHang theo MNV
+Doanh Thu (M) | Cùng giá trị trên nhưng đơn vị triệu VND | Doanh Thu (VND) ÷ 1.000.000, làm tròn 1 chữ số thập phân
+Số Đơn | Số đơn hàng duy nhất | Đếm Mã ĐH không trùng trong 3_DonHang theo MNV
+Số KH Mua | Số khách hàng khác nhau đã mua hàng | Đếm Mã KH không trùng trong 3_DonHang theo MNV
+Rev/Visit | Doanh thu trung bình mỗi visit (VND) | Doanh Thu (VND) ÷ Số Visit — đo hiệu quả mỗi lần ra đường
+Xếp Hạng | Thứ hạng trong nhóm theo doanh thu | Từ #1 (cao nhất) đến #16 (thấp nhất)
+Cột | Ý nghĩa
+Ưu Tiên | Mức độ cấp bách: P1 - Ngay (trong tuần) / P2 - 2 Tuần / P3 - 1 Tháng
+Lĩnh Vực | Mảng cần cải thiện: Nhân sự / Chất lượng CRM / Check-in / Kỹ năng bán hàng / Hệ thống / KPI / Training / Sản phẩm
+Vấn Đề | Mô tả ngắn gọn vấn đề cần giải quyết (trích từ Sheet 5)
+Hành Động Cụ Thể | Bước thực hiện chi tiết, có thể giao việc ngay
+Đối Tượng | Nhân viên / bộ phận cần thực hiện hoặc chịu tác động
+Timeline | Thời hạn hoàn thành đề xuất
+Người Phụ Trách | Vai trò chịu trách nhiệm thực thi
+Cột | Ý nghĩa | Cách tính
+MNV | Mã nhân viên | Từ 1_NhanVien
+Tên Nhân Viên | Họ tên | Từ 1_NhanVien
+Tuổi Nghề | Số năm/tháng kinh nghiệm | Từ 1_NhanVien.Tuổi nghề
+T11 → T18 / Đơn | Số đơn hàng duy nhất NV tạo ra trong tuần đó | Đếm Mã ĐH không trùng trong 3_DonHang có tuần_ISO(Ngày đặt) = Wxx theo MNV
+T11 → T18 / DT (M) | Doanh thu của NV trong tuần đó, đơn vị triệu VND | SUM(Số lượng × Đơn giá) trong 3_DonHang cùng điều kiện tuần và MNV ÷ 1.000.000
+Xu Hướng | Chiều hướng tăng/giảm đơn hàng của NV | So sánh TB đơn 3 tuần gần (W15–W17) vs TB 3 tuần trước (W12–W14): >+20% → 📈, +5→20% → ↗, ±5% → ➡, -5→-20% → ↘, <-20% → 📉
+TB Đơn/Tuần (3T gần) | Trung bình số đơn mỗi tuần trong 3 tuần gần nhất (W15–W17) | (Đơn W15 + Đơn W16 + Đơn W17) ÷ 3
+Thay Đổi vs 3T trước | Số đơn tăng/giảm tuyệt đối so với baseline 3 tuần trước (W12–W14) | TB 3T gần − TB 3T trước (có dấu +/-)
+Màu | Ý nghĩa
+🟡 Vàng nhạt | Số đơn/DT thấp (< 25% mức cao nhất nhóm)
+🟢 Xanh nhạt | Trung bình (25–50%)
+🟢 Xanh vừa | Khá cao (50–75%)
+🟢 Xanh đậm | Cao nhất (> 75%)
+⬜ Xám | Không có đơn trong tuần đó

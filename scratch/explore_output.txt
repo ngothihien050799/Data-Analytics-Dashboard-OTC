@@ -1,0 +1,21 @@
+2_Call info:
+Total rows: 6508
+Non-null KHCN (GUID): 6508
+Non-null KHCN.1 (Names): 6508
+
+Sample df_call with KHCN:
+     MNV   Mã KH                            Tên KH                                  KHCN                KHCN.1                   Ghi chú
+0  16045  O20776                 Nhà thuốc Hoa Đức  88f89300-40f5-4038-ad35-31c955a00172            nT hoa Đức  giới thiệu các sản phẩm 
+1  16045  N01798              Nhà thuốc Hải Đăng 3  aeb060b9-db52-4f65-93d4-b63b822d4381           NT Hải Đăng  giới thiệu các sản phẩm 
+2  16045  N00994  Hộ kinh doanh Nhà Thuốc Hải Đăng  1742b154-7a9e-4993-8530-7eead17f2246  Nhà Thuốc Hải Đăng 1  giới thiệu các sản phẩm 
+3  16045  O12530               Nhà thuốc Tuệ Minh   88908c68-df54-4637-89dd-68a879173bf7           NT Tuệ Minh  giới thiệu các sản phẩm 
+4  16045  O25746         Nhà thuốc Nghĩa Hưng HH4A  e634681a-a83c-46dc-91d6-d77c8d263033  Nhà Thuốc Nghĩa Hưng  giới thiệu các sản phẩm 
+
+Sample df_order with Mã KHCN:
+     MNV   Mã KH                                                                   Tên KH                               Mã KHCN           Mã ĐH
+0  19226  O24893                                                        Nhà thuốc Anh Đức  26357dce-cb32-4aa6-8f7a-151750a55319  DH010226/53023
+1  19226  O16586  Nhà thuốc số 1 trực thuộc Công ty Cổ phần Thương Mại Dược phẩm Quốc Anh  94609e2a-1120-414b-bd6d-2e6d0c8fb187  DH010226/53030
+2  19226  O16586  Nhà thuốc số 1 trực thuộc Công ty Cổ phần Thương Mại Dược phẩm Quốc Anh  94609e2a-1120-414b-bd6d-2e6d0c8fb187  DH010226/53030
+3  19226  O20976                                           Công ty TNHH Long Tâm Medicare  37759387-7315-4be8-a50d-40d23271573e  DH010226/53069
+4  16045  O12352                                                    Nhà thuốc Anh Thư 24H  1aaaf5e6-44a9-4d5b-983d-e4f1eedbab58  DH020226/53469
+

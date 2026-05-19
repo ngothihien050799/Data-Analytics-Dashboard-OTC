@@ -1,0 +1,15 @@
+Success!
+
+Group: CNHN-OTC-KV6-CK2
+Conversion Module:
+  Total calls KHCN (exploratory targets): 6
+  Total checks count (exploration calls): 547
+  Exploration rate (Tỷ lệ khai phá): 1.1%
+  Converted count (Đơn chốt): 4
+  Conversion rate (Tỷ lệ chuyển đổi): 66.7%
+  Total rate (Tỷ lệ chốt tổng): 0.7%
+  Revenue: 7.05 M
+  Number of member records: 10
+  Number of details: 4
+  Sample member conversion: {"mnv": "018003", "ten": "Lò Văn Dương", "called_count": 0, "checks_count": 1, "exploration_rate": 0.0, "converted_count": 0, "conversion_rate": 0.0, "total_rate": 0.0, "revenue": 0.0}
+  Sample detail: {"khcn_guid": "O36898", "khcn_name": "Nhà Thuốc Bích Diệu", "ma_kh": "O36898", "ten_kh": "NHÀ THUỐC BÍCH DIỆU", "nv_names": "Nguyễn Đình An", "latest_call_time": "09/02/2026 16:21", "latest_order_time": "19/03/2026 13:49", "base_order_ids": ["DH190326/29983", "DH190326/30003", "DH070426/68370", "DH070426/68374", "DH210426/96089"], "revenue": 3.32}
