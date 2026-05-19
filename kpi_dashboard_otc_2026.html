@@ -264,6 +264,10 @@ table.nv-table td.mono { font-family: var(--mono); }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Xu hướng 8 tuần
       </div>
+      <div class="nav-item" onclick="showView('products')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Sản phẩm
+      </div>
       <div class="nav-item" onclick="showView('alerts')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         Cảnh báo
@@ -388,11 +392,59 @@ table.nv-table td.mono { font-family: var(--mono); }
         <div id="alerts-container"></div>
       </div>
 
+
+      <!-- ── VIEW: PRODUCTS ── -->
+      <div class="view" id="view-products">
+        <div class="section-title">Tổng quan danh mục sản phẩm</div>
+        <div class="kpi-grid" id="sp-kpi-grid" style="grid-template-columns:repeat(4,1fr)"></div>
+
+        <div class="section-title">Doanh thu theo sản phẩm & kênh bán</div>
+        <div class="charts-row thirds">
+          <div class="card">
+            <div class="card-head"><div><div class="card-title">Top sản phẩm theo doanh thu</div><div class="card-sub">Triệu VND · T1–T4/2026</div></div></div>
+            <div class="chart-wrap" id="sp-bar-wrap" style="height:320px"><canvas id="chart-sp-bar" role="img" aria-label="Bar chart top sản phẩm doanh thu"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Cơ cấu kênh bán</div></div>
+            <div class="chart-wrap" style="height:180px"><canvas id="chart-kenh" role="img" aria-label="Doughnut kênh bán"></canvas></div>
+            <div id="kenh-legend" style="margin-top:12px"></div>
+          </div>
+        </div>
+
+        <div class="section-title">Bảng chi tiết sản phẩm</div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="table-wrap">
+            <table class="nv-table">
+              <thead><tr>
+                <th>#</th><th>Tên sản phẩm</th>
+                <th class="r">DT (M)</th><th class="r">SL bán</th>
+                <th class="r">Điểm bán</th><th class="r">NV bán</th>
+                <th class="r">Độ phủ NV</th>
+                <th>Xu hướng T1→T4</th><th>Nhận xét</th>
+              </tr></thead>
+              <tbody id="sp-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section-title">Top 5 sản phẩm của từng nhân viên</div>
+        <div class="card">
+          <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--text2)">Chọn nhân viên:</span>
+            <select id="sp-nv-select" onchange="renderNVProducts()" style="font-size:12px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:4px 10px"></select>
+          </div>
+          <div id="nv-products-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </main>
 </div><!-- /shell -->
 
 <script>
+// ════════════════ PRODUCT DATA ════════════════
+const PDATA = {"g1": {"products": [{"ma": "J00516", "ten": "Premical D3,K2 - Hộp 4 vỉ x 5 ống 10 ml", "rev": 457.4, "qty": 92400, "diem_ban": 319, "nv_count": 12, "monthly": [117.4, 42.9, 170.2, 126.9]}, {"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 292.5, "qty": 51580, "diem_ban": 167, "nv_count": 10, "monthly": [53.9, 66.7, 65.8, 106.1]}, {"ma": "Z00338", "ten": "Zensonid - Hộp 10 lọ x 2 ml (BFS-R)", "rev": 277.7, "qty": 22040, "diem_ban": 143, "nv_count": 9, "monthly": [77.7, 102.4, 74.2, 23.3]}, {"ma": "P01529", "ten": "Pyridol - Hộp 20 gói 10ml", "rev": 208.1, "qty": 41620, "diem_ban": 183, "nv_count": 13, "monthly": [57.8, 31.5, 69.9, 48.9]}, {"ma": "J00713", "ten": "Pred-new - H20 5ml", "rev": 206.5, "qty": 65560, "diem_ban": 303, "nv_count": 9, "monthly": [71.3, 37.3, 45.5, 52.4]}, {"ma": "M02316", "ten": "Mucome Softcap - Hộp 5 vỉ x 10 viên", "rev": 193.5, "qty": 175950, "diem_ban": 261, "nv_count": 14, "monthly": [33.7, 28.6, 79.6, 51.6]}, {"ma": "N00928", "ten": "Nausazy 4mg - Hộp 4 vỉ x 5 ống 5ml", "rev": 179.0, "qty": 12180, "diem_ban": 138, "nv_count": 11, "monthly": [45.0, 52.3, 45.9, 35.9]}, {"ma": "G00821", "ten": "Golistin-enema", "rev": 146.4, "qty": 2816, "diem_ban": 107, "nv_count": 12, "monthly": [32.0, 26.8, 35.3, 52.3]}, {"ma": "W00511", "ten": "Brometic 2mg/10ml", "rev": 128.2, "qty": 32140, "diem_ban": 152, "nv_count": 14, "monthly": [37.6, 19.4, 40.2, 31.0]}, {"ma": "J00515", "ten": "Premical softcap - Lọ 60 viên", "rev": 127.1, "qty": 38520, "diem_ban": 110, "nv_count": 12, "monthly": [21.6, 15.2, 54.8, 35.4]}, {"ma": "D01599", "ten": "Nebusal coleus spray baby - Lọ 50ml", "rev": 119.5, "qty": 1637, "diem_ban": 293, "nv_count": 13, "monthly": [44.1, 19.6, 34.7, 21.2]}, {"ma": "J00610", "ten": "Tigin gel - Hộp 1 tuýp 50g", "rev": 105.6, "qty": 2639, "diem_ban": 252, "nv_count": 14, "monthly": [23.4, 10.7, 42.8, 28.7]}, {"ma": "J00613", "ten": "Zentokid Giải độc & Mát gan", "rev": 93.5, "qty": 21260, "diem_ban": 122, "nv_count": 13, "monthly": [15.8, 5.8, 24.9, 47.0]}, {"ma": "P01771", "ten": "Pred-new - Hộp 4 vỉ x 5 ống 5ml", "rev": 86.1, "qty": 27320, "diem_ban": 118, "nv_count": 10, "monthly": [27.1, 15.6, 22.0, 21.4]}, {"ma": "D01349", "ten": "Desone - Hộp 1 lọ 30ml", "rev": 85.5, "qty": 1899, "diem_ban": 235, "nv_count": 13, "monthly": [25.2, 8.9, 24.3, 27.0]}], "nv_top5": {"019351": [{"ma": "J00610", "ten": "Tigin gel - Hộp 1 tuýp 50g", "rev": 3.8, "qty": 95}, {"ma": "P01529", "ten": "Pyridol - Hộp 20 gói 10ml", "rev": 2.0, "qty": 400}, {"ma": "N01414", "ten": "GLUKAN 265ml (Hương cam)", "rev": 1.7, "qty": 192}, {"ma": "N01417", "ten": "GLUKAN 265ml (Hương dâu)", "rev": 1.5, "qty": 168}, {"ma": "P01771", "ten": "Pred-new - Hộp 4 vỉ x 5 ống 5ml", "rev": 1.3, "qty": 400}], "018854": [{"ma": "J00516", "ten": "Premical D3,K2", "rev": 42.5, "qty": 8580}, {"ma": "P01475", "ten": "BFS - Piracetam", "rev": 39.3, "qty": 5350}, {"ma": "Z00338", "ten": "Zensonid - H10 lọ x 2ml", "rev": 35.7, "qty": 2830}, {"ma": "D01599", "ten": "Nebusal coleus spray baby", "rev": 32.3, "qty": 443}, {"ma": "P01481", "ten": "Progermila - 4 vỉ x 5 ống 5ml", "rev": 27.8, "qty": 4900}], "015412": [{"ma": "P01583", "ten": "Premical softcap - Lọ 60 viên", "rev": 77.8, "qty": 23580}, {"ma": "Z00338", "ten": "Zensonid - H10 lọ x 2ml", "rev": 77.5, "qty": 6150}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 60.7, "qty": 12260}, {"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 57.8, "qty": 10200}, {"ma": "M02316", "ten": "Mucome Softcap", "rev": 46.3, "qty": 42100}], "014833": [{"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 73.8, "qty": 13020}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 49.4, "qty": 9980}, {"ma": "J00713", "ten": "Pred-new - H20 5ml", "rev": 43.0, "qty": 13660}, {"ma": "N00928", "ten": "Nausazy 4mg", "rev": 34.1, "qty": 2320}, {"ma": "J00515", "ten": "Premical softcap", "rev": 29.1, "qty": 8820}], "019531": [{"ma": "J00709", "ten": "Zensonid - H10 lọ", "rev": 10.1, "qty": 800}, {"ma": "J00613", "ten": "Zentokid Giải độc & Mát gan", "rev": 7.7, "qty": 1760}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 7.6, "qty": 1540}, {"ma": "P01481", "ten": "Progermila - 4 vỉ x 5 ống", "rev": 6.8, "qty": 1200}, {"ma": "P01529", "ten": "Pyridol", "rev": 6.0, "qty": 1200}], "019714": [], "013365": [{"ma": "P01529", "ten": "Pyridol", "rev": 40.0, "qty": 8000}, {"ma": "Z00338", "ten": "Zensonid", "rev": 34.8, "qty": 2760}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 33.9, "qty": 6840}, {"ma": "Z00236", "ten": "Zentanil - H10 lọ 10ml", "rev": 18.1, "qty": 750}, {"ma": "J00713", "ten": "Pred-new - H20 5ml", "rev": 17.8, "qty": 5660}], "014981": [{"ma": "J00516", "ten": "Premical D3,K2", "rev": 38.6, "qty": 7800}, {"ma": "N00928", "ten": "Nausazy 4mg", "rev": 22.3, "qty": 1520}, {"ma": "J00713", "ten": "Pred-new - H20 5ml", "rev": 21.6, "qty": 6860}, {"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 21.4, "qty": 3780}, {"ma": "G00821", "ten": "Golistin-enema", "rev": 21.2, "qty": 407}], "015417": [{"ma": "J00516", "ten": "Premical D3,K2", "rev": 72.2, "qty": 14580}, {"ma": "P01529", "ten": "Pyridol", "rev": 47.0, "qty": 9400}, {"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 39.8, "qty": 7020}, {"ma": "J00713", "ten": "Pred-new - H20 5ml", "rev": 34.0, "qty": 10780}, {"ma": "P10003", "ten": "Premical softcap", "rev": 29.1, "qty": 8820}], "013451": [{"ma": "M02316", "ten": "Mucome Softcap", "rev": 55.2, "qty": 50150}, {"ma": "N00928", "ten": "Nausazy 4mg", "rev": 50.3, "qty": 3420}, {"ma": "K00628", "ten": "Kalira - H20 gói 5g", "rev": 44.1, "qty": 3000}, {"ma": "P01771", "ten": "Pred-new - 4vỉ x5 ống", "rev": 40.4, "qty": 12820}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 37.8, "qty": 7640}], "019291": [{"ma": "G00999", "ten": "Ganlotus", "rev": 1.2, "qty": 200}, {"ma": "J00524", "ten": "Tigin gel 25g", "rev": 1.1, "qty": 39}, {"ma": "Z00338", "ten": "Zensonid", "rev": 1.0, "qty": 80}, {"ma": "J00610", "ten": "Tigin gel 50g", "rev": 0.8, "qty": 20}, {"ma": "W00511", "ten": "Brometic 2mg/10ml", "rev": 0.8, "qty": 200}], "018139": [{"ma": "J00516", "ten": "Premical D3,K2", "rev": 57.1, "qty": 11540}, {"ma": "Z00338", "ten": "Zensonid", "rev": 40.3, "qty": 3200}, {"ma": "J00705", "ten": "Progermila", "rev": 32.9, "qty": 5800}, {"ma": "J00713", "ten": "Pred-new H20 5ml", "rev": 21.0, "qty": 6680}, {"ma": "J00515", "ten": "Premical softcap", "rev": 20.0, "qty": 6060}], "016403": [{"ma": "J00516", "ten": "Premical D3,K2", "rev": 51.8, "qty": 10460}, {"ma": "Z00338", "ten": "Zensonid", "rev": 36.9, "qty": 2930}, {"ma": "G00821", "ten": "Golistin-enema", "rev": 35.4, "qty": 682}, {"ma": "N00928", "ten": "Nausazy 4mg", "rev": 25.9, "qty": 1760}, {"ma": "P01529", "ten": "Pyridol", "rev": 20.6, "qty": 4120}], "019230": [{"ma": "P01481", "ten": "Progermila 4vỉ x5 ống", "rev": 6.1, "qty": 1080}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 3.3, "qty": 660}, {"ma": "D01599", "ten": "Nebusal coleus spray", "rev": 2.6, "qty": 35}, {"ma": "W00511", "ten": "Brometic 2mg/10ml", "rev": 2.2, "qty": 560}, {"ma": "J00524", "ten": "Tigin gel 25g", "rev": 2.0, "qty": 70}], "019349": [{"ma": "P01771", "ten": "Pred-new 4vỉ x5 ống", "rev": 3.0, "qty": 940}, {"ma": "Z00226", "ten": "Zensonid", "rev": 2.8, "qty": 220}, {"ma": "J00516", "ten": "Premical D3,K2", "rev": 2.6, "qty": 520}, {"ma": "W00511", "ten": "Brometic 2mg/10ml", "rev": 2.4, "qty": 600}, {"ma": "P01481", "ten": "Progermila 4vỉ x5 ống", "rev": 2.3, "qty": 400}]}, "kenh": [{"kenh": "CK1", "rev": 3179.8, "qty": 654101, "pct": 67.7}, {"kenh": "U-CK1", "rev": 1090.7, "qty": 175791, "pct": 23.2}, {"kenh": "MiniApp", "rev": 165.3, "qty": 26804, "pct": 3.5}, {"kenh": "OTC-GT", "rev": 105.4, "qty": 5795, "pct": 2.2}, {"kenh": "DB-CK1", "rev": 91.7, "qty": 10005, "pct": 2.0}, {"kenh": "Khác", "rev": 65.6, "qty": 10153, "pct": 1.4}], "nv_info": {"019351": "Hoàng Thị Xuyến", "018854": "Trần Văn Bách", "015412": "Vũ Thị Duyên", "014833": "Bùi Quang Huy", "019531": "Phạm Quang Hoạt", "019714": "Hoàng Thành Trung", "013365": "Nguyễn Văn Ảnh", "014981": "Nguyễn Long Vỹ", "015417": "Nguyễn Hải Nam", "013451": "Nguyễn Văn Nguyên", "019291": "Nguyễn Minh Đức", "018139": "Nguyễn Thị Thắm", "016403": "Dương Văn Tuấn", "019230": "Lưu Thị Thư", "019349": "Quyền Thế Thuần"}}, "g2": {"products": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 1018.6, "qty": 230980, "diem_ban": 431, "nv_count": 17, "monthly": [169.0, 186.5, 645.5, 17.6]}, {"ma": "Z00330", "ten": "Zensalbu nebules 2.5 (Ống Vuông)", "rev": 784.3, "qty": 177840, "diem_ban": 245, "nv_count": 11, "monthly": [161.4, 165.7, 452.2, 4.9]}, {"ma": "J00705", "ten": "Progermila - H20 5ml", "rev": 386.5, "qty": 68160, "diem_ban": 279, "nv_count": 17, "monthly": [62.1, 73.1, 86.9, 164.3]}, {"ma": "J00566", "ten": "Zentokid ZinC - 5ml", "rev": 259.9, "qty": 47260, "diem_ban": 176, "nv_count": 17, "monthly": [71.9, 59.1, 49.3, 79.6]}, {"ma": "F00550", "ten": "Fosmitic - Lọ 5ml", "rev": 218.1, "qty": 4846, "diem_ban": 333, "nv_count": 19, "monthly": [62.4, 54.9, 47.3, 53.4]}, {"ma": "Z00209", "ten": "Zentokid - H10", "rev": 200.7, "qty": 11150, "diem_ban": 108, "nv_count": 18, "monthly": [47.3, 31.0, 66.8, 55.6]}, {"ma": "C02334", "ten": "Companity - H20 gói 15ml", "rev": 196.8, "qty": 29280, "diem_ban": 406, "nv_count": 16, "monthly": [62.0, 34.7, 53.0, 47.2]}, {"ma": "B01308", "ten": "Biosoft - H6 vỉ x15 viên", "rev": 129.6, "qty": 32490, "diem_ban": 112, "nv_count": 14, "monthly": [42.0, 36.6, 36.3, 14.7]}, {"ma": "J00650", "ten": "Viên đặt pH.Balance - 7v (B)", "rev": 127.9, "qty": 12789, "diem_ban": 360, "nv_count": 19, "monthly": [34.6, 30.9, 45.9, 16.5]}, {"ma": "D01522", "ten": "Nebusal 3% - 5 ống 5ml", "rev": 100.6, "qty": 11975, "diem_ban": 257, "nv_count": 18, "monthly": [28.3, 19.4, 32.8, 20.1]}, {"ma": "J00579", "ten": "Zentokid Ivy - 5ml", "rev": 95.5, "qty": 21700, "diem_ban": 114, "nv_count": 14, "monthly": [34.1, 11.3, 26.6, 23.5]}, {"ma": "N01257", "ten": "Nebusal drops 3% - Lọ 10ml", "rev": 87.8, "qty": 4182, "diem_ban": 316, "nv_count": 19, "monthly": [29.7, 17.4, 24.3, 16.4]}, {"ma": "P01299", "ten": "Pamol - 4v x5 ống 5ml (120mg)", "rev": 73.1, "qty": 19340, "diem_ban": 228, "nv_count": 17, "monthly": [17.2, 9.5, 26.0, 20.3]}, {"ma": "P01411", "ten": "Pamol 250 - 4v x5 ống 5ml", "rev": 70.7, "qty": 15710, "diem_ban": 202, "nv_count": 18, "monthly": [16.5, 5.5, 27.4, 21.3]}, {"ma": "V02525", "ten": "Viên đặt pH.Balance - 7v (B) v2", "rev": 70.0, "qty": 7000, "diem_ban": 117, "nv_count": 14, "monthly": [11.1, 6.4, 6.3, 46.1]}], "nv_top5": {"019543": [{"ma": "F00550", "ten": "Fosmitic", "rev": 14.4, "qty": 319}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 9.9, "qty": 550}, {"ma": "J00705", "ten": "Progermila H20 5ml", "rev": 4.8, "qty": 840}, {"ma": "J00566", "ten": "Zentokid ZinC 5ml", "rev": 4.4, "qty": 800}, {"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 3.5, "qty": 800}], "016380": [{"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 220.3, "qty": 49960}, {"ma": "J00705", "ten": "Progermila", "rev": 16.8, "qty": 2960}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 14.1, "qty": 2560}, {"ma": "C02334", "ten": "Companity", "rev": 12.6, "qty": 1880}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 11.7, "qty": 650}], "017652": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 196.2, "qty": 44490}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 49.5, "qty": 9000}, {"ma": "J00705", "ten": "Progermila", "rev": 41.1, "qty": 7240}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 40.9, "qty": 2270}, {"ma": "C02334", "ten": "Companity", "rev": 20.4, "qty": 3040}], "013626": [{"ma": "J00705", "ten": "Progermila", "rev": 79.6, "qty": 14040}, {"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 66.5, "qty": 15080}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 40.7, "qty": 7400}, {"ma": "C02334", "ten": "Companity", "rev": 36.7, "qty": 5460}, {"ma": "F00550", "ten": "Fosmitic", "rev": 33.5, "qty": 744}], "019255": [{"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 0.9, "qty": 200}, {"ma": "B01308", "ten": "Biosoft", "rev": 0.7, "qty": 180}, {"ma": "J00650", "ten": "pH.Balance viên đặt", "rev": 0.4, "qty": 42}, {"ma": "B01955", "ten": "Bao cao su Excibe", "rev": 0.3, "qty": 10}, {"ma": "M01733", "ten": "Miếng dán hạ sốt Lexadol", "rev": 0.1, "qty": 25}], "012638": [{"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 269.1, "qty": 61030}, {"ma": "F00550", "ten": "Fosmitic", "rev": 47.3, "qty": 1052}, {"ma": "J00705", "ten": "Progermila", "rev": 29.6, "qty": 5220}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 22.4, "qty": 4080}, {"ma": "C02334", "ten": "Companity", "rev": 16.7, "qty": 2480}], "019721": [], "018594": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 72.0, "qty": 16320}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 30.1, "qty": 5480}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 15.3, "qty": 850}, {"ma": "N01257", "ten": "Nebusal drops 3%", "rev": 12.0, "qty": 572}, {"ma": "F00550", "ten": "Fosmitic", "rev": 11.3, "qty": 252}], "019145": [{"ma": "J00705", "ten": "Progermila", "rev": 70.0, "qty": 12340}, {"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 52.8, "qty": 11970}, {"ma": "C02334", "ten": "Companity", "rev": 36.0, "qty": 5360}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 35.4, "qty": 6440}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 27.7, "qty": 1540}], "019722": [], "014308": [{"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 191.5, "qty": 43430}, {"ma": "J00705", "ten": "Progermila", "rev": 76.3, "qty": 13460}, {"ma": "Z00312", "ten": "Zentokid ZinC (vỉ)", "rev": 35.6, "qty": 6480}, {"ma": "C02334", "ten": "Companity", "rev": 26.7, "qty": 3980}, {"ma": "B01308", "ten": "Biosoft", "rev": 26.2, "qty": 6570}], "019206": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 60.0, "qty": 13600}, {"ma": "J00705", "ten": "Progermila", "rev": 3.3, "qty": 580}, {"ma": "N00845", "ten": "Nước cất ống nhựa 10ml", "rev": 2.7, "qty": 2750}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 2.5, "qty": 140}, {"ma": "D01183", "ten": "Dismolan 5ml", "rev": 2.3, "qty": 900}], "014982": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 165.4, "qty": 37500}, {"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 18.3, "qty": 4150}, {"ma": "F00550", "ten": "Fosmitic", "rev": 16.0, "qty": 355}, {"ma": "J00705", "ten": "Progermila", "rev": 14.5, "qty": 2560}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 7.9, "qty": 1440}], "019542": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 2.0, "qty": 450}, {"ma": "J00676", "ten": "Laforin red toothpaste", "rev": 0.9, "qty": 20}, {"ma": "J00536", "ten": "Laforin Throat Spray", "rev": 0.7, "qty": 10}, {"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 0.5, "qty": 120}, {"ma": "J00677", "ten": "Laforin Daily 500ml", "rev": 0.4, "qty": 7}], "010658": [], "016020": [{"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 65.3, "qty": 14800}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 17.6, "qty": 980}, {"ma": "J00705", "ten": "Progermila", "rev": 11.6, "qty": 2040}, {"ma": "F00550", "ten": "Fosmitic", "rev": 7.5, "qty": 167}, {"ma": "J00650", "ten": "pH.Balance viên đặt", "rev": 6.6, "qty": 658}], "019146": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 19.9, "qty": 4510}, {"ma": "D01522", "ten": "Nebusal 3%", "rev": 1.8, "qty": 210}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 1.1, "qty": 60}, {"ma": "F00550", "ten": "Fosmitic", "rev": 0.9, "qty": 20}, {"ma": "N01257", "ten": "Nebusal drops 3%", "rev": 0.8, "qty": 40}], "016696": [], "018780": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 120.6, "qty": 27340}, {"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 10.6, "qty": 2400}, {"ma": "F00550", "ten": "Fosmitic", "rev": 5.2, "qty": 116}, {"ma": "J00705", "ten": "Progermila", "rev": 4.0, "qty": 700}, {"ma": "Z00219", "ten": "Zencombi", "rev": 3.9, "qty": 310}], "019277": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 4.9, "qty": 1120}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 3.9, "qty": 700}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 3.6, "qty": 200}, {"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 3.5, "qty": 800}, {"ma": "J00705", "ten": "Progermila", "rev": 2.8, "qty": 500}], "019541": [{"ma": "J00566", "ten": "Zentokid ZinC", "rev": 3.7, "qty": 680}, {"ma": "C02334", "ten": "Companity", "rev": 3.5, "qty": 520}, {"ma": "F00550", "ten": "Fosmitic", "rev": 2.0, "qty": 45}, {"ma": "V02525", "ten": "pH.Balance viên đặt v2", "rev": 1.8, "qty": 175}, {"ma": "P01879", "ten": "pH Balance gel bọt", "rev": 1.0, "qty": 7}], "019225": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 54.1, "qty": 12260}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 4.1, "qty": 740}, {"ma": "P01411", "ten": "Pamol 250", "rev": 3.6, "qty": 800}, {"ma": "Z00330", "ten": "Zensalbu (Ống Vuông)", "rev": 3.3, "qty": 750}, {"ma": "C02334", "ten": "Companity", "rev": 2.6, "qty": 380}], "018228": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 152.0, "qty": 34460}, {"ma": "J00566", "ten": "Zentokid ZinC", "rev": 30.2, "qty": 5500}, {"ma": "F00550", "ten": "Fosmitic", "rev": 20.4, "qty": 454}, {"ma": "J00705", "ten": "Progermila", "rev": 19.2, "qty": 3380}, {"ma": "Z00209", "ten": "Zentokid H10", "rev": 16.9, "qty": 940}], "019347": [{"ma": "Z00200", "ten": "Zensalbu nebules 2.5", "rev": 41.1, "qty": 9320}, {"ma": "J00705", "ten": "Progermila", "rev": 4.5, "qty": 800}, {"ma": "J00650", "ten": "pH.Balance viên đặt", "rev": 2.5, "qty": 245}, {"ma": "F00550", "ten": "Fosmitic", "rev": 2.2, "qty": 50}, {"ma": "Z00385", "ten": "Zentokid Ivy (KM)", "rev": 1.5, "qty": 17}]}, "kenh": [{"kenh": "CK2", "rev": 3562.3, "qty": 556407, "pct": 68.8}, {"kenh": "U-CK2", "rev": 1274.6, "qty": 228465, "pct": 24.6}, {"kenh": "OTC-GT", "rev": 134.9, "qty": 10065, "pct": 2.6}, {"kenh": "MiniApp", "rev": 85.2, "qty": 9020, "pct": 1.6}, {"kenh": "Khác", "rev": 123.5, "qty": 9313, "pct": 2.4}], "nv_info": {"019543": "Lương Văn Thiết", "016380": "Lê Văn Vũ", "017652": "Vũ Thị Hoà", "013626": "Vũ Văn Lâm", "019255": "Thi Phước Long", "012638": "Cao Hồng Nhung", "019721": "Hà Thị Ánh Nguyệt", "018594": "Đặng Văn Lương", "019145": "Nguyễn Thị Huyền Trang", "019722": "Nguyễn Thị Thúy", "014308": "Nguyễn Thị Ngọc Huyền", "019206": "Nguyễn Đức Trung", "014982": "Nguyễn Thức Anh", "019542": "Nguyễn Bá Anh", "010658": "Phạm Mạnh Hùng", "016020": "Nguyễn Ngọc Hải", "019146": "Trần Đình Duẫn", "016696": "Cao Thị Tâm", "018780": "Lê Văn Cường", "019277": "Lê Văn Thịnh", "019541": "Nguyễn Minh Tiến", "019225": "Nguyễn Anh Đào", "018228": "Trần Y Nam", "019347": "Ngô Ngọc Lâm"}}};
+
 const DATA = {"groups": [{"id": "kv4", "name": "CNHN-OTC-KV4", "members": [{"mnv": "019351", "ten": "Hoàng Thị Xuyến", "tuoi_nghe": 2, "visits": 126, "rev": 25.2, "orders": 29, "kh_visit": 86, "kh_buy": 18, "conv": 20.9, "avg_dur": 5.8, "note_bad_pct": 13, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 126, 0], "weekly": [21, 3, 0, 0, 0, 0, 0, 0]}, {"mnv": "018854", "ten": "Trần Văn Bách", "tuoi_nghe": 8, "visits": 1159, "rev": 544.6, "orders": 507, "kh_visit": 138, "kh_buy": 111, "conv": 80.4, "avg_dur": 10.7, "note_bad_pct": 3, "off_hours": 2, "short_visits": 0, "gps_same": 0, "monthly": [351, 235, 327, 246], "weekly": [40, 22, 24, 47, 34, 38, 18, 2]}, {"mnv": "015412", "ten": "Vũ Thị Duyên", "tuoi_nghe": 36, "visits": 1029, "rev": 722.2, "orders": 396, "kh_visit": 137, "kh_buy": 100, "conv": 73.0, "avg_dur": 7.9, "note_bad_pct": 1, "off_hours": 0, "short_visits": 11, "gps_same": 16, "monthly": [294, 161, 288, 286], "weekly": [42, 42, 21, 46, 34, 21, 7, 0]}, {"mnv": "014833", "ten": "Bùi Quang Huy", "tuoi_nghe": 42, "visits": 1104, "rev": 674.7, "orders": 465, "kh_visit": 139, "kh_buy": 121, "conv": 87.1, "avg_dur": 13.8, "note_bad_pct": 99, "off_hours": 12, "short_visits": 0, "gps_same": 25, "monthly": [315, 156, 352, 281], "weekly": [48, 31, 32, 18, 31, 39, 28, 2]}, {"mnv": "019531", "ten": "Phạm Quang Hoạt", "tuoi_nghe": 1, "visits": 290, "rev": 84.4, "orders": 78, "kh_visit": 121, "kh_buy": 47, "conv": 38.8, "avg_dur": 8.8, "note_bad_pct": 93, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 290], "weekly": [0, 0, 0, 17, 21, 15, 20, 5]}, {"mnv": "019714", "ten": "Hoàng Thành Trung", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "013365", "ten": "Nguyễn Văn Ảnh", "tuoi_nghe": 55, "visits": 779, "rev": 343.2, "orders": 218, "kh_visit": 78, "kh_buy": 78, "conv": 100.0, "avg_dur": 11.7, "note_bad_pct": 0, "off_hours": 20, "short_visits": 0, "gps_same": 19, "monthly": [302, 186, 291, 0], "weekly": [10, 13, 15, 9, 0, 0, 0, 0]}, {"mnv": "014981", "ten": "Nguyễn Long Vỹ", "tuoi_nghe": 40, "visits": 1030, "rev": 404.7, "orders": 305, "kh_visit": 121, "kh_buy": 99, "conv": 81.8, "avg_dur": 7.3, "note_bad_pct": 94, "off_hours": 0, "short_visits": 9, "gps_same": 14, "monthly": [314, 125, 318, 273], "weekly": [28, 25, 15, 19, 36, 16, 28, 2]}, {"mnv": "015417", "ten": "Nguyễn Hải Nam", "tuoi_nghe": 36, "visits": 1094, "rev": 480.9, "orders": 503, "kh_visit": 147, "kh_buy": 118, "conv": 80.3, "avg_dur": 9.7, "note_bad_pct": 100, "off_hours": 0, "short_visits": 5, "gps_same": 12, "monthly": [293, 204, 308, 289], "weekly": [39, 26, 42, 42, 41, 28, 24, 2]}, {"mnv": "013451", "ten": "Nguyễn Văn Nguyên", "tuoi_nghe": 54, "visits": 1066, "rev": 554.1, "orders": 311, "kh_visit": 118, "kh_buy": 92, "conv": 78.0, "avg_dur": 7.9, "note_bad_pct": 93, "off_hours": 0, "short_visits": 18, "gps_same": 22, "monthly": [274, 189, 309, 294], "weekly": [28, 22, 40, 10, 26, 10, 17, 18]}, {"mnv": "019291", "ten": "Nguyễn Minh Đức", "tuoi_nghe": 4, "visits": 394, "rev": 7.6, "orders": 16, "kh_visit": 106, "kh_buy": 10, "conv": 9.4, "avg_dur": 10.7, "note_bad_pct": 4, "off_hours": 7, "short_visits": 0, "gps_same": 1, "monthly": [123, 186, 85, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018139", "ten": "Nguyễn Thị Thắm", "tuoi_nghe": 13, "visits": 1092, "rev": 346.4, "orders": 300, "kh_visit": 119, "kh_buy": 71, "conv": 59.7, "avg_dur": 7.4, "note_bad_pct": 0, "off_hours": 1, "short_visits": 0, "gps_same": 4, "monthly": [303, 197, 303, 289], "weekly": [16, 25, 29, 22, 14, 20, 20, 10]}, {"mnv": "016403", "ten": "Dương Văn Tuấn", "tuoi_nghe": 27, "visits": 1120, "rev": 445.1, "orders": 316, "kh_visit": 110, "kh_buy": 84, "conv": 76.4, "avg_dur": 10.6, "note_bad_pct": 94, "off_hours": 0, "short_visits": 1, "gps_same": 5, "monthly": [339, 163, 317, 301], "weekly": [19, 24, 24, 46, 28, 12, 21, 20]}, {"mnv": "019230", "ten": "Lưu Thị Thư", "tuoi_nghe": 4, "visits": 558, "rev": 30.9, "orders": 52, "kh_visit": 96, "kh_buy": 31, "conv": 32.3, "avg_dur": 6.8, "note_bad_pct": 97, "off_hours": 0, "short_visits": 0, "gps_same": 2, "monthly": [301, 181, 76, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "019349", "ten": "Quyền Thế Thuần", "tuoi_nghe": 2, "visits": 361, "rev": 34.5, "orders": 49, "kh_visit": 122, "kh_buy": 31, "conv": 25.4, "avg_dur": 8.6, "note_bad_pct": 95, "off_hours": 0, "short_visits": 0, "gps_same": 3, "monthly": [0, 0, 330, 31], "weekly": [12, 13, 10, 6, 0, 0, 1, 0]}], "weeks": ["T11\n09/03–15/03", "T12\n16/03–22/03", "T13\n23/03–29/03", "T14\n30/03–05/04", "T15\n06/04–12/04", "T16\n13/04–19/04", "T17\n20/04–26/04", "T18*\n27/04–03/05"]}, {"id": "kv2", "name": "CNHN-OTC-KV1-CK2", "members": [{"mnv": "019543", "ten": "Lương Văn Thiết", "tuoi_nghe": 1, "visits": 161, "rev": 72.0, "orders": 82, "kh_visit": 62, "kh_buy": 37, "conv": 59.7, "avg_dur": 6.7, "note_bad_pct": 2, "off_hours": 2, "short_visits": 1, "gps_same": 11, "monthly": [0, 0, 0, 161], "weekly": [0, 0, 0, 15, 17, 23, 13, 14]}, {"mnv": "016380", "ten": "Lê Văn Vũ", "tuoi_nghe": 27, "visits": 1061, "rev": 400.7, "orders": 330, "kh_visit": 122, "kh_buy": 101, "conv": 82.8, "avg_dur": 9.3, "note_bad_pct": 97, "off_hours": 1, "short_visits": 3, "gps_same": 348, "monthly": [307, 185, 297, 272], "weekly": [54, 43, 38, 18, 17, 10, 14, 3]}, {"mnv": "017652", "ten": "Vũ Thị Hoà", "tuoi_nghe": 19, "visits": 956, "rev": 602.5, "orders": 475, "kh_visit": 151, "kh_buy": 129, "conv": 85.4, "avg_dur": 9.3, "note_bad_pct": 6, "off_hours": 1, "short_visits": 0, "gps_same": 14, "monthly": [287, 163, 257, 249], "weekly": [53, 44, 45, 20, 28, 21, 13, 29]}, {"mnv": "013626", "ten": "Vũ Văn Lâm", "tuoi_nghe": 51, "visits": 1096, "rev": 645.8, "orders": 530, "kh_visit": 136, "kh_buy": 125, "conv": 91.9, "avg_dur": 8.9, "note_bad_pct": 2, "off_hours": 1, "short_visits": 0, "gps_same": 11, "monthly": [333, 173, 309, 281], "weekly": [62, 64, 25, 13, 56, 30, 21, 15]}, {"mnv": "019255", "ten": "Thi Phước Long", "tuoi_nghe": 4, "visits": 77, "rev": 2.5, "orders": 5, "kh_visit": 12, "kh_buy": 5, "conv": 41.7, "avg_dur": 7.2, "note_bad_pct": 97, "off_hours": 0, "short_visits": 0, "gps_same": 1, "monthly": [77, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "012638", "ten": "Cao Hồng Nhung", "tuoi_nghe": 63, "visits": 723, "rev": 606.2, "orders": 420, "kh_visit": 93, "kh_buy": 89, "conv": 95.7, "avg_dur": 8.7, "note_bad_pct": 9, "off_hours": 7, "short_visits": 2, "gps_same": 7, "monthly": [266, 96, 159, 202], "weekly": [59, 24, 37, 15, 11, 31, 27, 25]}, {"mnv": "019721", "ten": "Hà Thị Ánh Nguyệt", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018594", "ten": "Đặng Văn Lương", "tuoi_nghe": 10, "visits": 678, "rev": 234.0, "orders": 209, "kh_visit": 88, "kh_buy": 59, "conv": 67.0, "avg_dur": 7.5, "note_bad_pct": 12, "off_hours": 5, "short_visits": 0, "gps_same": 264, "monthly": [231, 48, 195, 204], "weekly": [50, 25, 15, 26, 3, 5, 11, 0]}, {"mnv": "019145", "ten": "Nguyễn Thị Huyền Trang", "tuoi_nghe": 5, "visits": 1042, "rev": 584.9, "orders": 536, "kh_visit": 124, "kh_buy": 102, "conv": 82.3, "avg_dur": 10.2, "note_bad_pct": 0, "off_hours": 5, "short_visits": 1, "gps_same": 100, "monthly": [248, 184, 331, 279], "weekly": [38, 62, 27, 33, 33, 40, 22, 10]}, {"mnv": "019722", "ten": "Nguyễn Thị Thúy", "tuoi_nghe": 0, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "014308", "ten": "Nguyễn Thị Ngọc Huyền", "tuoi_nghe": 46, "visits": 1131, "rev": 620.0, "orders": 545, "kh_visit": 151, "kh_buy": 138, "conv": 91.4, "avg_dur": 8.7, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 29, "monthly": [330, 190, 312, 299], "weekly": [75, 34, 23, 22, 48, 35, 16, 20]}, {"mnv": "019206", "ten": "Nguyễn Đức Trung", "tuoi_nghe": 4, "visits": 513, "rev": 92.0, "orders": 89, "kh_visit": 102, "kh_buy": 46, "conv": 45.1, "avg_dur": 9.3, "note_bad_pct": 4, "off_hours": 1, "short_visits": 0, "gps_same": 182, "monthly": [190, 181, 142, 0], "weekly": [19, 18, 1, 1, 0, 0, 0, 0]}, {"mnv": "014982", "ten": "Nguyễn Thức Anh", "tuoi_nghe": 40, "visits": 694, "rev": 347.6, "orders": 315, "kh_visit": 96, "kh_buy": 87, "conv": 90.6, "avg_dur": 8.8, "note_bad_pct": 4, "off_hours": 0, "short_visits": 0, "gps_same": 270, "monthly": [252, 104, 225, 113], "weekly": [61, 37, 39, 19, 2, 11, 8, 1]}, {"mnv": "019542", "ten": "Nguyễn Bá Anh", "tuoi_nghe": 1, "visits": 31, "rev": 6.1, "orders": 13, "kh_visit": 31, "kh_buy": 9, "conv": 29.0, "avg_dur": 15.8, "note_bad_pct": 3, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 31], "weekly": [0, 0, 0, 11, 2, 0, 0, 0]}, {"mnv": "010658", "ten": "Phạm Mạnh Hùng", "tuoi_nghe": 98, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "016020", "ten": "Nguyễn Ngọc Hải", "tuoi_nghe": 31, "visits": 863, "rev": 174.8, "orders": 192, "kh_visit": 110, "kh_buy": 61, "conv": 55.5, "avg_dur": 12.5, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 55, "monthly": [257, 110, 330, 166], "weekly": [25, 21, 40, 12, 10, 1, 0, 2]}, {"mnv": "019146", "ten": "Trần Đình Duẫn", "tuoi_nghe": 5, "visits": 272, "rev": 28.0, "orders": 28, "kh_visit": 71, "kh_buy": 20, "conv": 28.2, "avg_dur": 6.3, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [124, 148, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "016696", "ten": "Cao Thị Tâm", "tuoi_nghe": 25, "visits": 0, "rev": 0.0, "orders": 0, "kh_visit": 0, "kh_buy": 0, "conv": 0, "avg_dur": 0, "note_bad_pct": 0, "off_hours": 0, "short_visits": 0, "gps_same": 0, "monthly": [0, 0, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "018780", "ten": "Lê Văn Cường", "tuoi_nghe": 9, "visits": 550, "rev": 177.0, "orders": 141, "kh_visit": 85, "kh_buy": 57, "conv": 67.1, "avg_dur": 8.3, "note_bad_pct": 7, "off_hours": 2, "short_visits": 0, "gps_same": 153, "monthly": [292, 115, 143, 0], "weekly": [35, 24, 20, 2, 0, 0, 0, 0]}, {"mnv": "019277", "ten": "Lê Văn Thịnh", "tuoi_nghe": 4, "visits": 227, "rev": 26.4, "orders": 32, "kh_visit": 71, "kh_buy": 22, "conv": 31.0, "avg_dur": 8.4, "note_bad_pct": 1, "off_hours": 1, "short_visits": 0, "gps_same": 0, "monthly": [67, 160, 0, 0], "weekly": [0, 0, 0, 0, 0, 0, 0, 0]}, {"mnv": "019541", "ten": "Nguyễn Minh Tiến", "tuoi_nghe": 1, "visits": 162, "rev": 28.0, "orders": 53, "kh_visit": 86, "kh_buy": 27, "conv": 31.4, "avg_dur": 7.7, "note_bad_pct": 86, "off_hours": 1, "short_visits": 1, "gps_same": 4, "monthly": [0, 0, 0, 162], "weekly": [0, 0, 0, 4, 12, 17, 12, 8]}, {"mnv": "019225", "ten": "Nguyễn Anh Đào", "tuoi_nghe": 4, "visits": 662, "rev": 98.2, "orders": 113, "kh_visit": 94, "kh_buy": 39, "conv": 41.5, "avg_dur": 7.2, "note_bad_pct": 6, "off_hours": 2, "short_visits": 1, "gps_same": 7, "monthly": [206, 177, 279, 0], "weekly": [7, 5, 29, 3, 0, 0, 0, 0]}, {"mnv": "018228", "ten": "Trần Y Nam", "tuoi_nghe": 13, "visits": 1003, "rev": 365.9, "orders": 380, "kh_visit": 135, "kh_buy": 108, "conv": 80.0, "avg_dur": 8.9, "note_bad_pct": 6, "off_hours": 1, "short_visits": 1, "gps_same": 45, "monthly": [307, 123, 292, 281], "weekly": [67, 38, 40, 31, 14, 15, 7, 1]}, {"mnv": "019347", "ten": "Ngô Ngọc Lâm", "tuoi_nghe": 2, "visits": 355, "rev": 67.2, "orders": 73, "kh_visit": 121, "kh_buy": 38, "conv": 31.4, "avg_dur": 8.3, "note_bad_pct": 96, "off_hours": 2, "short_visits": 0, "gps_same": 1, "monthly": [0, 0, 185, 170], "weekly": [14, 12, 7, 9, 10, 4, 3, 2]}], "weeks": ["T11\n09/03–15/03", "T12\n16/03–22/03", "T13\n23/03–29/03", "T14\n30/03–05/04", "T15\n06/04–12/04", "T16\n13/04–19/04", "T17\n20/04–26/04", "T18*\n27/04–03/05"]}]};
 
 let currentGroup = 0;
@@ -623,7 +675,7 @@ function renderAlerts(){
 }
 
 function renderAll(){
-  renderKPI(); renderCharts(); renderNVTable(); renderTrend(); renderAlerts();
+  renderKPI(); renderCharts(); renderNVTable(); renderTrend(); renderAlerts(); renderProducts();
   // Update group info in sidebar
   DATA.groups.forEach((g,i)=>{
     const s=groupStats(g);
@@ -649,6 +701,161 @@ function showView(name){
 }
 
 renderAll();
+
+
+function getPD(){ return currentGroup===0 ? PDATA.g1 : PDATA.g2; }
+
+function renderProducts(){
+  const pd = getPD();
+  const g  = getGroup();
+  const totalNV = g.members.filter(x=>x.visits>0).length;
+
+  // KPI cards
+  const totalRev = pd.products.reduce((s,p)=>s+p.rev,0);
+  const totalQty = pd.products.reduce((s,p)=>s+p.qty,0);
+  const maxDiemBan = Math.max(...pd.products.map(p=>p.diem_ban));
+  const top3share = pd.products.slice(0,3).reduce((s,p)=>s+p.rev,0)/totalRev*100;
+  const spCount = pd.products.length;
+  const kpiCards = [
+    {label:'Tổng SKU bán', val:spCount+'', unit:'sản phẩm', cls:'c-blue', sub:'Trong kỳ T1–T4/2026'},
+    {label:'SP phủ nhất', val:maxDiemBan+'', unit:'điểm bán', cls:'c-teal', sub:pd.products.find(p=>p.diem_ban===maxDiemBan)?.ten.split(' ').slice(0,3).join(' ')},
+    {label:'Top 3 SP', val:Math.round(top3share)+'', unit:'% DT', cls:'c-amber', sub:'Rủi ro tập trung '+( top3share>60?'⚠ Cao':'✅ Vừa phải')},
+    {label:'SP dẫn đầu', val:pd.products[0].rev+'', unit:'M VND', cls:'c-green', sub:pd.products[0].ten.split(' ').slice(0,3).join(' ')},
+  ];
+  document.getElementById('sp-kpi-grid').innerHTML = kpiCards.map(c=>`
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.val}<span> ${c.unit}</span></div>
+      <div class="kpi-sub neutral">${c.sub}</div>
+    </div>`).join('');
+
+  // Product bar chart
+  destroyChart('sp-bar');
+  const top8 = pd.products.slice(0,8);
+  const COLORS_SP = ['#4f8ef7','#3ecf8e','#a78bfa','#f5a623','#2dd4bf','#f05252','#ec4899','#8b5cf6'];
+  charts['sp-bar'] = new Chart(document.getElementById('chart-sp-bar'),{
+    type:'bar',
+    data:{labels: top8.map(p=>p.ten.length>28?p.ten.slice(0,26)+'…':p.ten),
+      datasets:[{label:'Doanh thu (M)',data:top8.map(p=>p.rev),
+        backgroundColor: top8.map((_,i)=>COLORS_SP[i]+'cc'),
+        borderColor: top8.map((_,i)=>COLORS_SP[i]),
+        borderWidth:1, borderRadius:4, borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}M VND`}}},
+      scales:{x:{ticks:{color:'#8892a4',font:{size:10},callback:v=>v+'M'},grid:{color:'rgba(255,255,255,0.06)'},border:{display:false}},
+              y:{ticks:{color:'#d0d8ea',font:{size:10}},grid:{display:false}}}}
+  });
+  document.getElementById('sp-bar-wrap').style.height = (top8.length * 38 + 40) + 'px';
+
+  // Kenh donut
+  destroyChart('kenh');
+  const top5k = pd.kenh.slice(0,5);
+  const KENH_COLORS = ['#4f8ef7','#3ecf8e','#f5a623','#a78bfa','#f05252'];
+  charts['kenh'] = new Chart(document.getElementById('chart-kenh'),{
+    type:'doughnut',
+    data:{labels:top5k.map(k=>k.kenh), datasets:[{data:top5k.map(k=>k.rev),
+      backgroundColor:KENH_COLORS, borderWidth:2, borderColor:'#0d0f12', hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}M (${pd.kenh[c.dataIndex]?.pct}%)`}}}}
+  });
+  document.getElementById('kenh-legend').innerHTML = top5k.map((k,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;font-size:11px">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:2px;background:${KENH_COLORS[i]};display:inline-block"></span><span style="color:var(--text2)">${k.kenh}</span></span>
+      <span style="font-family:var(--mono);color:var(--text)">${k.rev}M <span style="color:var(--text3)">(${k.pct}%)</span></span>
+    </div>`).join('');
+
+  // Product table
+  const maxRev2 = pd.products[0].rev;
+  document.getElementById('sp-tbody').innerHTML = pd.products.map((p,i)=>{
+    const mTrend = p.monthly;
+    const sparkW = Math.max(...mTrend,0.1);
+    const sparkBars = mTrend.map((v,mi)=>{
+      const h = Math.max(4, Math.round(v/sparkW*28));
+      const col = ['#4f8ef7','#3ecf8e','#f5a623','#a78bfa'][mi];
+      return `<div style="width:10px;height:${h}px;background:${col};border-radius:2px 2px 0 0;flex-shrink:0"></div>`;
+    }).join('');
+    const lateRev = mTrend[2]+mTrend[3]; const earlyRev = mTrend[0]+mTrend[1];
+    const trend = earlyRev===0 ? '🆕 Mới' : lateRev > earlyRev*1.2 ? '📈 Tăng' : lateRev < earlyRev*0.8 ? '📉 Giảm' : '➡ Ổn định';
+    const phuNV = Math.round(p.nv_count/totalNV*100);
+    const note = p.diem_ban >= 300 ? '<span class="badge ok">Phủ rộng</span>' : p.nv_count < 5 ? '<span class="badge warn">Ít NV bán</span>' : trend==='📉 Giảm' ? '<span class="badge err">Đang giảm</span>' : '<span class="badge off">Bình thường</span>';
+    return `<tr>
+      <td style="color:var(--text3);font-family:var(--mono)">${i+1}</td>
+      <td style="max-width:200px"><div style="font-weight:500;font-size:12px">${p.ten}</div><div style="font-size:10px;color:var(--text3)">${p.ma}</div></td>
+      <td class="r"><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div style="width:50px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden"><div style="width:${Math.round(p.rev/maxRev2*100)}%;height:100%;background:#4f8ef7"></div></div><span style="font-family:var(--mono);font-size:12px">${p.rev}M</span></div></td>
+      <td class="r mono">${p.qty.toLocaleString('vi')}</td>
+      <td class="r mono" style="color:#3ecf8e">${p.diem_ban}</td>
+      <td class="r mono">${p.nv_count}</td>
+      <td class="r"><span style="font-size:11px;color:${phuNV>=70?'#3ecf8e':phuNV>=40?'#f5a623':'#f05252'}">${phuNV}%</span></td>
+      <td><div style="display:flex;align-items:flex-end;gap:2px;height:32px">${sparkBars}</div></td>
+      <td>${note}</td>
+    </tr>`;
+  }).join('');
+
+  // NV selector
+  const sel = document.getElementById('sp-nv-select');
+  const nvInfo = pd.nv_info;
+  sel.innerHTML = Object.entries(nvInfo).map(([mnv,ten])=>`<option value="${mnv}">${ten}</option>`).join('');
+  renderNVProducts();
+}
+
+function renderNVProducts(){
+  const pd = getPD();
+  const mnv = document.getElementById('sp-nv-select').value;
+  const top5 = pd.nv_top5[mnv] || [];
+  const nvName = pd.nv_info[mnv] || mnv;
+  const totalNVRev = top5.reduce((s,p)=>s+p.rev,0);
+  const maxR = top5.length ? top5[0].rev : 1;
+  const MEDAL = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const COLS = ['#4f8ef7','#3ecf8e','#f5a623','#a78bfa','#2dd4bf'];
+
+  const left = top5.length ? `
+    <div style="padding:4px 0">
+      ${top5.map((p,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span style="font-size:16px;flex-shrink:0">${MEDAL[i]}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.ten}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <div style="flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden">
+                <div style="width:${Math.round(p.rev/maxR*100)}%;height:100%;background:${COLS[i]};border-radius:2px"></div>
+              </div>
+              <span style="font-family:var(--mono);font-size:11px;color:${COLS[i]};flex-shrink:0">${p.rev}M</span>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${p.qty.toLocaleString('vi')} đơn vị · ${Math.round(p.rev/totalNVRev*100)}% DT</div>
+          </div>
+        </div>`).join('')}
+    </div>` : '<div style="color:var(--text3);padding:20px;text-align:center;font-size:12px">Không có dữ liệu đơn hàng</div>';
+
+  const chartHTML = top5.length ? `
+    <div style="position:relative;height:200px;margin-top:8px">
+      <canvas id="chart-nv-sp" role="img" aria-label="Donut chart top 5 sản phẩm nhân viên"></canvas>
+    </div>
+    <div style="margin-top:10px">
+      ${top5.map((p,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:5px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:${COLS[i]};display:inline-block"></span><span style="color:var(--text2)">${p.ten.split(' ').slice(0,3).join(' ')}</span></span>
+        <span style="font-family:var(--mono);color:var(--text)">${p.rev}M</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('nv-products-grid').innerHTML = `
+    <div class="card" style="background:var(--bg3)"><div class="card-title" style="margin-bottom:10px">Top 5 SP · ${nvName}</div>${left}</div>
+    <div class="card" style="background:var(--bg3)"><div class="card-title" style="margin-bottom:10px">Tỷ trọng doanh thu</div>${chartHTML}</div>`;
+
+  if(top5.length){
+    destroyChart('nv-sp');
+    setTimeout(()=>{
+      const canvas = document.getElementById('chart-nv-sp');
+      if(canvas) charts['nv-sp'] = new Chart(canvas,{
+        type:'doughnut',
+        data:{labels:top5.map(p=>p.ten.split(' ').slice(0,3).join(' ')),
+          datasets:[{data:top5.map(p=>p.rev),backgroundColor:COLS,borderWidth:2,borderColor:'#141720',hoverOffset:4}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw}M VND (${Math.round(c.raw/totalNVRev*100)}%)`}}}}
+      });
+    },50);
+  }
+}
+
 </script>
 </body>
 </html>

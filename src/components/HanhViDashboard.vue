@@ -171,13 +171,15 @@ const processFile = async () => {
       headers["x-file-name"] = file.value.name;
     }
 
-    const response = await axios.post("/process_hanh_vi", formData, { headers });
+    const response = await axios.post("/process_hanh_vi", formData, {
+      headers,
+    });
     rawData.value = response.data;
     status.value = "success";
     currentGroupIndex.value = 0;
     activeView.value = "overview";
     await nextTick();
-    renderAllCharts();
+    triggerRender();
   } catch (err) {
     console.error(err);
     status.value = "error";
@@ -187,7 +189,6 @@ const processFile = async () => {
     loading.value = false;
   }
 };
-
 
 const onReuploadChange = async (e) => {
   const selectedFile = e.target.files[0];
@@ -200,29 +201,140 @@ const onReuploadChange = async (e) => {
 const switchGroup = (idx) => {
   currentGroupIndex.value = idx;
   nextTick(() => {
-    renderAllCharts();
+    triggerRender();
   });
 };
 
-const destroyChart = (id) => {
+const destroyChart = (id, canvasId = null) => {
   if (charts.value[id]) {
-    charts.value[id].destroy();
+    try {
+      charts.value[id].destroy();
+    } catch (e) {
+      console.warn("Error destroying chart instance", id, e);
+    }
     delete charts.value[id];
+  }
+  if (canvasId) {
+    const el = document.getElementById(canvasId);
+    if (el) {
+      const instance = Chart.getChart(el);
+      if (instance) {
+        try {
+          instance.destroy();
+        } catch (e) {
+          console.warn("Error destroying orphaned chart", canvasId, e);
+        }
+      }
+    }
   }
 };
 
+const selectedEmployeeId = ref("");
+const expandedAlerts = ref({});
+
+// Set initial selectedEmployeeId when data or group changes
+watch(
+  [currentGroupIndex, rawData],
+  () => {
+    if (currentGroup.value && currentGroup.value.nv_info) {
+      const keys = Object.keys(currentGroup.value.nv_info);
+      if (keys.length > 0) {
+        selectedEmployeeId.value = keys[0];
+      } else {
+        selectedEmployeeId.value = "";
+      }
+    } else {
+      selectedEmployeeId.value = "";
+    }
+  },
+  { immediate: true },
+);
+
+const renderNVSpChart = () => {
+  destroyChart("nv-sp", "chart-nv-sp");
+  const pd = currentGroup.value;
+  if (!pd || !selectedEmployeeId.value || !pd.nv_top5) return;
+
+  const top5 = pd.nv_top5[selectedEmployeeId.value] || [];
+  if (!top5.length) return;
+
+  const ctxNvSp = document.getElementById("chart-nv-sp");
+  if (ctxNvSp) {
+    const COLS = ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#14b8a6"];
+    const totalNVRev = top5.reduce((s, p) => s + p.rev, 0);
+
+    charts.value["nv-sp"] = new Chart(ctxNvSp, {
+      type: "doughnut",
+      data: {
+        labels: top5.map((p) => p.ten.split(" ").slice(0, 3).join(" ")),
+        datasets: [
+          {
+            data: top5.map((p) => p.rev),
+            backgroundColor: COLS,
+            borderWidth: 2,
+            borderColor: "#0f172a",
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "60%",
+        animation: {
+          duration: 1500,
+          easing: "easeOutExpo",
+          delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 100 : 0,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (c) =>
+                `${c.raw}M VND (${Math.round((c.raw / (totalNVRev || 1)) * 100)}%)`,
+            },
+          },
+        },
+      },
+    });
+  }
+};
+
+// Watch selectedEmployeeId and render the chart
+watch(selectedEmployeeId, () => {
+  if (activeView.value === "products") {
+    nextTick(() => {
+      renderNVSpChart();
+    });
+  }
+});
+
 const renderAllCharts = () => {
   if (!currentGroup.value) return;
+
+  // Unified cleanup of charts not needed in current view
+  if (activeView.value !== "overview") {
+    destroyChart("rev", "chart-rev");
+    destroyChart("conv", "chart-conv");
+    destroyChart("monthly", "chart-monthly");
+  }
+  if (activeView.value !== "trend") {
+    destroyChart("weekly", "chart-weekly");
+    destroyChart("weekly-rev", "chart-weekly-rev");
+  }
+  if (activeView.value !== "products") {
+    destroyChart("sp-bar", "chart-sp-bar");
+    destroyChart("kenh", "chart-kenh");
+    destroyChart("nv-sp", "chart-nv-sp");
+  }
+
   const active = activeMembers.value;
   const top10 = active.slice(0, 10);
   const months = ["T1", "T2", "T3", "T4"];
 
   if (activeView.value === "overview") {
-    destroyChart("rev");
-    destroyChart("conv");
-    destroyChart("monthly");
-
     // Chart Doanh Thu
+    destroyChart("rev", "chart-rev");
     const ctxRev = document.getElementById("chart-rev");
     if (ctxRev) {
       charts.value["rev"] = new Chart(ctxRev, {
@@ -247,6 +359,11 @@ const renderAllCharts = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+          },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (c) => `${c.raw}M VND` } },
@@ -272,6 +389,7 @@ const renderAllCharts = () => {
 
     // Chart Conversion
     const sortedConv = [...active].sort((a, b) => b.conv - a.conv).slice(0, 10);
+    destroyChart("conv", "chart-conv");
     const ctxConv = document.getElementById("chart-conv");
     if (ctxConv) {
       charts.value["conv"] = new Chart(ctxConv, {
@@ -294,6 +412,11 @@ const renderAllCharts = () => {
           indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+          },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (c) => `${c.raw}%` } },
@@ -320,6 +443,7 @@ const renderAllCharts = () => {
     }
 
     // Chart Monthly
+    destroyChart("monthly", "chart-monthly");
     const ctxMonthly = document.getElementById("chart-monthly");
     if (ctxMonthly) {
       const nameColorMap = {
@@ -350,6 +474,11 @@ const renderAllCharts = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.datasetIndex * 100 + context.dataIndex * 30 : 0,
+          },
           plugins: {
             legend: {
               display: true,
@@ -378,7 +507,7 @@ const renderAllCharts = () => {
   }
 
   if (activeView.value === "trend") {
-    destroyChart("weekly");
+    destroyChart("weekly", "chart-weekly");
     const ctxWeekly = document.getElementById("chart-weekly");
     if (ctxWeekly) {
       const wks = currentGroup.value.weeks.map((w) => w.split("\n")[0]);
@@ -409,6 +538,11 @@ const renderAllCharts = () => {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+          },
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (c) => `${c.raw} đơn` } },
@@ -427,12 +561,204 @@ const renderAllCharts = () => {
         },
       });
     }
+
+    destroyChart("weekly-rev", "chart-weekly-rev");
+    const ctxWeeklyRev = document.getElementById("chart-weekly-rev");
+    if (ctxWeeklyRev) {
+      const wks = currentGroup.value.weeks.map((w) => w.split("\n")[0]);
+      const actWeekly = currentGroup.value.members.filter(
+        (x) => x.weekly_rev && x.weekly_rev.some((v) => v > 0),
+      );
+      const totalsRev = wks.map((_, i) =>
+        actWeekly.reduce((s, m) => s + (m.weekly_rev[i] || 0), 0),
+      );
+      charts.value["weekly-rev"] = new Chart(ctxWeeklyRev, {
+        type: "line",
+        data: {
+          labels: wks,
+          datasets: [
+            {
+              label: "Doanh số toàn nhóm (M VND)",
+              data: totalsRev,
+              borderColor: "#10b981",
+              backgroundColor: "rgba(16, 185, 129, 0.15)",
+              fill: true,
+              borderWidth: 3,
+              pointRadius: 5,
+              pointBackgroundColor: "#10b981",
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: (c) => `${c.raw.toFixed(2)} M VND` },
+            },
+          },
+          scales: {
+            x: {
+              ticks: { color: "#8892a4", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.04)" },
+            },
+            y: {
+              ticks: { color: "#8892a4", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.06)" },
+              border: { display: false },
+            },
+          },
+        },
+      });
+    }
   }
+
+  if (activeView.value === "products") {
+    const pd = currentGroup.value;
+    if (!pd || !pd.products || !pd.products.length) return;
+
+    // 1. Chart SP Bar
+    destroyChart("sp-bar", "chart-sp-bar");
+    const ctxSpBar = document.getElementById("chart-sp-bar");
+    if (ctxSpBar) {
+      const top8 = pd.products.slice(0, 8);
+      const COLORS_SP = [
+        "#3b82f6",
+        "#10b981",
+        "#a855f7",
+        "#f59e0b",
+        "#14b8a6",
+        "#ef4444",
+        "#ec4899",
+        "#6366f1",
+      ];
+      charts.value["sp-bar"] = new Chart(ctxSpBar, {
+        type: "bar",
+        data: {
+          labels: top8.map((p) =>
+            p.ten.length > 28 ? p.ten.slice(0, 26) + "…" : p.ten,
+          ),
+          datasets: [
+            {
+              label: "Doanh thu (M)",
+              data: top8.map((p) => p.rev),
+              backgroundColor: top8.map(
+                (_, i) => COLORS_SP[i % COLORS_SP.length] + "cc",
+              ),
+              borderColor: top8.map((_, i) => COLORS_SP[i % COLORS_SP.length]),
+              borderWidth: 1,
+              borderRadius: 4,
+              borderSkipped: false,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 50 : 0,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (c) => `${c.raw}M VND` } },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#8892a4",
+                font: { size: 10 },
+                callback: (v) => v + "M",
+              },
+              grid: { color: "rgba(255,255,255,0.06)" },
+              border: { display: false },
+            },
+            y: {
+              ticks: { color: "#d0d8ea", font: { size: 10 } },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    // 2. Chart Kenh Doughnut
+    destroyChart("kenh", "chart-kenh");
+    const ctxKenh = document.getElementById("chart-kenh");
+    if (ctxKenh && pd.kenh && pd.kenh.length) {
+      const top5k = pd.kenh.slice(0, 5);
+      const KENH_COLORS = [
+        "#3b82f6",
+        "#10b981",
+        "#f59e0b",
+        "#a855f7",
+        "#ef4444",
+      ];
+      charts.value["kenh"] = new Chart(ctxKenh, {
+        type: "doughnut",
+        data: {
+          labels: top5k.map((k) => k.kenh),
+          datasets: [
+            {
+              data: top5k.map((k) => k.rev),
+              backgroundColor: KENH_COLORS,
+              borderWidth: 2,
+              borderColor: "#0f172a",
+              hoverOffset: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          animation: {
+            duration: 1500,
+            easing: "easeOutExpo",
+            delay: (context) => context.type === "data" && context.mode === "default" ? context.dataIndex * 100 : 0,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (c) =>
+                  `${c.label}: ${c.raw}M (${top5k[c.dataIndex]?.pct}%)`,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // 3. Chart NV SP Doughnut
+    renderNVSpChart();
+  }
+};
+
+const renderTimeout = ref(null);
+
+const triggerRender = () => {
+  if (renderTimeout.value) {
+    clearTimeout(renderTimeout.value);
+  }
+  renderTimeout.value = setTimeout(() => {
+    renderAllCharts();
+    renderTimeout.value = null;
+  }, 100);
 };
 
 watch(activeView, () => {
   nextTick(() => {
-    renderAllCharts();
+    triggerRender();
   });
 });
 
@@ -478,6 +804,36 @@ const trendMax = computed(() => {
   return Math.max(...m.flatMap((x) => x.weekly), 1);
 });
 
+// Helpers for Weekly Revenue Heatmap
+const hmColorRev = (v, mx) => {
+  if (!v) return "#1a1f2e";
+  const r = v / mx;
+  if (r < 0.2) return "#064e3b"; // dark green
+  if (r < 0.4) return "#047857";
+  if (r < 0.6) return "#10b981";
+  if (r < 0.8) return "#34d399";
+  return "#6ee7b7"; // light mint green
+};
+const hmTextRev = (v, mx) => {
+  if (!v) return "#555f72";
+  return v / mx >= 0.4 ? "#ffffff" : "#a7f3d0";
+};
+const activeTrendMembersRev = computed(() => {
+  if (!currentGroup.value) return [];
+  return currentGroup.value.members
+    .filter((x) => x.weekly_rev && x.weekly_rev.some((v) => v > 0))
+    .sort(
+      (a, b) =>
+        b.weekly_rev.reduce((s, v) => s + v, 0) -
+        a.weekly_rev.reduce((s, v) => s + v, 0),
+    );
+});
+const trendMaxRev = computed(() => {
+  const m = activeTrendMembersRev.value;
+  if (!m.length) return 1;
+  return Math.max(...m.flatMap((x) => x.weekly_rev || []), 1);
+});
+
 // Alerts
 const generatedAlerts = computed(() => {
   if (!currentGroup.value) return [];
@@ -508,13 +864,15 @@ const generatedAlerts = computed(() => {
       sub: `${m.kh_visit} KH thăm, chỉ ${m.kh_buy} KH mua hàng — cần coaching gấp`,
     }),
   );
-  const offH = g.members.filter((x) => x.off_hours >= 10);
+  const offH = g.members.filter((x) => x.off_hours > 0);
   offH.forEach((m) =>
     alerts.push({
+      id: "off-" + m.mnv,
       type: "warn",
       icon: "🕐",
       title: `${m.ten}: ${m.off_hours} check-in ngoài giờ`,
-      sub: "Check-in trước 7h hoặc sau 20h — cần xác minh tính xác thực",
+      sub: "Check-in trước 7h hoặc sau 18h — cần xác minh tính xác thực",
+      details: m.off_hours_list || [],
     }),
   );
   const gpsHigh = g.members.filter(
@@ -542,6 +900,183 @@ const generatedAlerts = computed(() => {
 
   return alerts;
 });
+
+const guideSearch = ref("");
+const guideCategories = [
+  {
+    id: "kpis",
+    title: "Chỉ số hiệu năng (KPIs)",
+    items: [
+      {
+        name: "Doanh số (Revenue)",
+        desc: "Tổng doanh thu bán hàng thực tế được ghi nhận cho nhóm hoặc cá nhân TDV (tính theo đơn vị Triệu VND - M VND).",
+        formula: "Tổng doanh thu đơn hàng thành công",
+      },
+      {
+        name: "Khách hàng thăm (Visits)",
+        desc: "Tổng số lượng khách hàng độc bản (Mã KH) được nhân viên thực hiện check-in viếng thăm trong kỳ.",
+        formula: "Count(Unique Mã KH check-in)",
+      },
+      {
+        name: "Khách hàng mua (Buyers)",
+        desc: "Số lượng khách hàng thực tế có phát sinh đơn hàng thành công trong kỳ.",
+        formula: "Count(Unique Mã KH mua hàng)",
+      },
+      {
+        name: "Tỷ lệ chuyển đổi (Conversion Rate)",
+        desc: "Tỷ lệ chuyển đổi từ khách hàng được viếng thăm sang khách hàng mua hàng thực tế.",
+        formula: "(Khách hàng mua / Khách hàng thăm) * 100",
+      },
+    ],
+  },
+  {
+    id: "behavior",
+    title: "Chỉ số hành vi & Cảnh báo",
+    items: [
+      {
+        name: "Note CRM kém (Bad CRM Note)",
+        desc: "Tỷ lệ các cuộc gọi ghi chú CRM sơ sài, quá ngắn (dưới 15 ký tự) hoặc ghi chú không có ý nghĩa.",
+        formula: "(Số note ngắn / Tổng số visit) * 100",
+      },
+      {
+        name: "Check-in ngoài giờ (Out-of-Hours)",
+        desc: "Lượt viếng thăm khách hàng được thực hiện ngoài khung giờ hành chính tiêu chuẩn (Trước 7:00 hoặc Sau 18:00).",
+        formula: "Thời gian check-in < 7h00 hoặc >= 18h00",
+      },
+
+      {
+        name: "Ngừng hoạt động (Inactive Alert)",
+        desc: "Hệ thống tự động phát hiện nhân viên có lịch sử kinh doanh tích cực nhưng không phát sinh bất kỳ đơn hàng nào trong 4 tuần liên tục gần nhất.",
+        formula: "Doanh số 4 tuần gần nhất = 0",
+      },
+    ],
+  },
+];
+
+const filteredGuide = computed(() => {
+  if (!guideSearch.value) return guideCategories;
+  const q = guideSearch.value.toLowerCase().trim();
+  return guideCategories
+    .map((cat) => {
+      const items = cat.items.filter(
+        (it) =>
+          it.name.toLowerCase().includes(q) ||
+          it.desc.toLowerCase().includes(q) ||
+          (it.formula && it.formula.toLowerCase().includes(q)),
+      );
+      return { ...cat, items };
+    })
+    .filter((cat) => cat.items.length > 0);
+});
+
+const getMostCoveredProductCount = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return 0;
+  return Math.max(...currentGroup.value.products.map((p) => p.diem_ban));
+};
+
+const getMostCoveredProductTen = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return "";
+  const maxD = getMostCoveredProductCount();
+  const prod = currentGroup.value.products.find((p) => p.diem_ban === maxD);
+  return prod ? prod.ten : "";
+};
+
+const getTop3SharePct = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return 0;
+  const total = currentGroup.value.products.reduce((s, p) => s + p.rev, 0);
+  if (total === 0) return 0;
+  const top3 = currentGroup.value.products
+    .slice(0, 3)
+    .reduce((s, p) => s + p.rev, 0);
+  return Math.round((top3 / total) * 100);
+};
+
+const getTopProductRev = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return 0;
+  return currentGroup.value.products[0].rev;
+};
+
+const getTopProductTen = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return "";
+
+  return currentGroup.value.products[0].ten;
+};
+
+const getMaxProductRev = () => {
+  if (
+    !currentGroup.value ||
+    !currentGroup.value.products ||
+    !currentGroup.value.products.length
+  )
+    return 1;
+  return currentGroup.value.products[0].rev;
+};
+
+const getActiveNVCount = () => {
+  if (!currentGroup.value || !currentGroup.value.members) return 1;
+  return currentGroup.value.members.filter((x) => x.visits > 0).length || 1;
+};
+
+const getPhuNVColor = (count) => {
+  const pct = Math.round((count / getActiveNVCount()) * 100);
+  return pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444";
+};
+
+const getMaxMonthlyVal = (arr) => {
+  if (!arr || !arr.length) return 1;
+  return Math.max(...arr, 0.1);
+};
+
+const getProductBadge = (p) => {
+  const totalNV = getActiveNVCount();
+  const phuNV = Math.round((p.nv_count / totalNV) * 100);
+  const mTrend = p.monthly;
+  const lateRev = (mTrend[2] || 0) + (mTrend[3] || 0);
+  const earlyRev = (mTrend[0] || 0) + (mTrend[1] || 0);
+  const trend =
+    earlyRev === 0
+      ? "Mới"
+      : lateRev > earlyRev * 1.2
+        ? "Tăng"
+        : lateRev < earlyRev * 0.8
+          ? "Giảm"
+          : "Ổn định";
+
+  if (p.diem_ban >= 300) return { cls: "badge ok", txt: "Phủ rộng" };
+  if (p.nv_count < 5) return { cls: "badge warn", txt: "Ít NV bán" };
+  if (trend === "Giảm") return { cls: "badge err", txt: "Đang giảm" };
+  return { cls: "badge off", txt: "Bình thường" };
+};
+
+const getNVSumRev = (arr) => {
+  if (!arr || !arr.length) return 1;
+  return arr.reduce((s, p) => s + p.rev, 0);
+};
 
 const getSparkH = (m) => Math.max(...m.weekly, 1);
 const getSparkClass = (v) => (v ? "bg-accent" : "bg-bg3");
@@ -687,6 +1222,25 @@ const getBadgeHTML = (m) => {
           </div>
           <div
             class="nav-item"
+            :class="{ active: activeView === 'products' }"
+            @click="activeView = 'products'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+              />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+            Sản phẩm
+          </div>
+          <div
+            class="nav-item"
             :class="{ active: activeView === 'alerts' }"
             @click="activeView = 'alerts'"
           >
@@ -700,6 +1254,24 @@ const getBadgeHTML = (m) => {
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             Cảnh báo
+          </div>
+          <div
+            class="nav-item"
+            :class="{ active: activeView === 'guide' }"
+            @click="activeView = 'guide'"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path
+                d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+              />
+            </svg>
+            Cẩm nang
           </div>
         </div>
 
@@ -773,7 +1345,7 @@ const getBadgeHTML = (m) => {
 
         <div class="content">
           <!-- ── VIEW: OVERVIEW ── -->
-          <div v-show="activeView === 'overview'">
+          <div v-if="activeView === 'overview'">
             <div class="section-title">Chỉ số tổng hợp</div>
             <div class="kpi-grid">
               <!-- KPI 1 -->
@@ -1098,10 +1670,10 @@ const getBadgeHTML = (m) => {
           </div>
 
           <!-- ── VIEW: NV TABLE ── -->
-          <div v-show="activeView === 'nv'">
+          <div v-if="activeView === 'nv'">
             <div class="section-title">Bảng chi tiết nhân viên</div>
             <div class="chart-card !p-0">
-              <div class="table-wrap">
+              <div class="table-wrap scrollable-x-nv">
                 <table class="nv-table">
                   <thead>
                     <tr>
@@ -1133,9 +1705,15 @@ const getBadgeHTML = (m) => {
                           </div>
                           <div>
                             <div class="font-medium">{{ m.ten }}</div>
-                             <div style="font-size: 11px; color: #555f72; font-weight: normal">
-                               {{ m.mnv }} · {{ m.tuoi_nghe }}y
-                             </div>
+                            <div
+                              style="
+                                font-size: 11px;
+                                color: #555f72;
+                                font-weight: normal;
+                              "
+                            >
+                              {{ m.mnv }} · {{ m.tuoi_nghe }}y
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -1262,7 +1840,7 @@ const getBadgeHTML = (m) => {
           </div>
 
           <!-- ── VIEW: TREND ── -->
-          <div v-show="activeView === 'trend'">
+          <div v-if="activeView === 'trend'">
             <div class="section-title">Xu hướng đơn hàng — 8 tuần gần nhất</div>
             <div class="chart-card mb-4">
               <div class="card-head">
@@ -1337,12 +1915,596 @@ const getBadgeHTML = (m) => {
               </div>
             </div>
 
-            <div class="chart-card">
+            <!-- Heatmap Doanh Số Theo Tuần -->
+            <div class="chart-card mb-4 mt-4">
               <div class="card-head">
-                <div class="card-title">Xu hướng tổng đơn toàn nhóm</div>
+                <div>
+                  <div class="card-title">
+                    Heatmap doanh số theo tuần (Triệu VND)
+                  </div>
+                  <div class="card-sub">
+                    * Doanh thu thực tế phát sinh theo tuần
+                  </div>
+                </div>
+                <div class="heatmap-legend-row">
+                  <div class="legend-item">
+                    <span class="color-swatch swatch-zero"></span>
+                    <span class="legend-text">0</span>
+                  </div>
+                  <div class="legend-item">
+                    <span
+                      class="color-swatch"
+                      style="background: #064e3b"
+                    ></span>
+                    <span class="legend-text">Thấp</span>
+                  </div>
+                  <div class="legend-item">
+                    <span
+                      class="color-swatch"
+                      style="background: #047857"
+                    ></span>
+                    <span class="legend-text">TB</span>
+                  </div>
+                  <div class="legend-item">
+                    <span
+                      class="color-swatch"
+                      style="background: #10b981"
+                    ></span>
+                    <span class="legend-text">Khá</span>
+                  </div>
+                  <div class="legend-item">
+                    <span
+                      class="color-swatch"
+                      style="background: #34d399"
+                    ></span>
+                    <span class="legend-text">Cao</span>
+                  </div>
+                  <div class="legend-item">
+                    <span
+                      class="color-swatch"
+                      style="background: #6ee7b7"
+                    ></span>
+                    <span class="legend-text">Đỉnh</span>
+                  </div>
+                </div>
               </div>
-              <div class="chart-wrap" style="height: 180px">
-                <canvas id="chart-weekly"></canvas>
+              <div
+                class="heatmap-grid"
+                :style="{
+                  gridTemplateColumns: `140px repeat(${currentGroup.weeks.length}, 1fr)`,
+                }"
+              >
+                <div class="hm-head text-left pl-1">Nhân viên</div>
+                <div
+                  v-for="w in currentGroup.weeks"
+                  :key="w"
+                  class="hm-head whitespace-pre-wrap leading-tight"
+                >
+                  {{ w }}
+                </div>
+
+                <template v-for="m in activeTrendMembersRev" :key="m.mnv">
+                  <div class="hm-name">{{ getFirstAndLast(m.ten) }}</div>
+                  <div
+                    v-for="(v, vi) in m.weekly_rev"
+                    :key="vi"
+                    class="hm-cell"
+                    :style="{
+                      background: hmColorRev(v, trendMaxRev),
+                      color: hmTextRev(v, trendMaxRev),
+                    }"
+                  >
+                    {{ v ? v.toFixed(1) : "—" }}
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <div class="charts-row">
+              <div class="chart-card">
+                <div class="card-head">
+                  <div class="card-title">Xu hướng tổng đơn toàn nhóm</div>
+                </div>
+                <div class="chart-wrap" style="height: 180px">
+                  <canvas id="chart-weekly"></canvas>
+                </div>
+              </div>
+
+              <div class="chart-card">
+                <div class="card-head">
+                  <div class="card-title">Xu hướng doanh số toàn nhóm</div>
+                </div>
+                <div class="chart-wrap" style="height: 180px">
+                  <canvas id="chart-weekly-rev"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── VIEW: PRODUCTS ── -->
+          <div v-if="activeView === 'products'">
+            <div class="section-title">Tổng quan danh mục sản phẩm</div>
+            <div
+              class="kpi-grid mb-4"
+              style="grid-template-columns: repeat(4, 1fr)"
+            >
+              <!-- Card 1 -->
+              <div class="kpi-card c-blue">
+                <div class="kpi-label">Tổng SKU bán</div>
+                <div class="kpi-value">
+                  {{ currentGroup.products?.length || 0 }}<span> sản phẩm</span>
+                </div>
+                <div class="kpi-sub neutral">Trong kỳ T1–T4/2026</div>
+              </div>
+              <!-- Card 2 -->
+              <div class="kpi-card c-teal">
+                <div class="kpi-label">SP phủ nhất</div>
+                <div class="kpi-value">
+                  {{ getMostCoveredProductCount() }}<span> điểm bán</span>
+                </div>
+                <div class="kpi-sub neutral">
+                  {{ getMostCoveredProductTen() }}
+                </div>
+              </div>
+              <!-- Card 3 -->
+              <div class="kpi-card c-amber">
+                <div class="kpi-label">Top 3 SP % DT</div>
+                <div class="kpi-value">
+                  {{ getTop3SharePct() }}<span>% DT</span>
+                </div>
+                <div
+                  class="kpi-sub"
+                  :class="getTop3SharePct() > 60 ? 'down' : 'up'"
+                >
+                  {{
+                    getTop3SharePct() > 60
+                      ? "⚠ Rủi ro tập trung Cao"
+                      : "✅ Rủi ro tập trung Vừa phải"
+                  }}
+                </div>
+              </div>
+              <!-- Card 4 -->
+              <div class="kpi-card c-green">
+                <div class="kpi-label">SP dẫn đầu</div>
+                <div class="kpi-value">
+                  {{ getTopProductRev() }}<span> M VND</span>
+                </div>
+                <div class="kpi-sub neutral">{{ getTopProductTen() }}</div>
+              </div>
+            </div>
+
+            <div class="section-title">Doanh thu theo sản phẩm & kênh bán</div>
+            <div class="charts-row thirds mb-4">
+              <div class="chart-card flex-[2]">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Top sản phẩm theo doanh thu</div>
+                    <div class="card-sub">Triệu VND · T1–T4/2026</div>
+                  </div>
+                </div>
+                <div class="chart-wrap" style="height: 320px">
+                  <canvas id="chart-sp-bar"></canvas>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="card-head">
+                  <div class="card-title">Cơ cấu kênh bán</div>
+                </div>
+                <div class="chart-wrap" style="height: 180px">
+                  <canvas id="chart-kenh"></canvas>
+                </div>
+                <div style="margin-top: 12px">
+                  <div
+                    v-for="(k, i) in currentGroup.kenh?.slice(0, 5) || []"
+                    :key="k.kenh"
+                    style="
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                      margin-bottom: 7px;
+                      font-size: 11px;
+                    "
+                  >
+                    <span style="display: flex; align-items: center; gap: 6px">
+                      <span
+                        style="
+                          width: 8px;
+                          height: 8px;
+                          border-radius: 2px;
+                          display: inline-block;
+                        "
+                        :style="{
+                          background: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#a855f7',
+                            '#ef4444',
+                          ][i % 5],
+                        }"
+                      ></span>
+                      <span class="text-text2">{{ k.kenh }}</span>
+                    </span>
+                    <span class="font-mono text-text">
+                      {{ k.rev }}M
+                      <span class="text-text3">({{ k.pct }}%)</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-title">Bảng chi tiết sản phẩm</div>
+            <div class="chart-card !p-0 mb-4" style="margin-bottom: 16px">
+              <div class="table-wrap scrollable-y">
+                <table class="nv-table">
+                  <thead>
+                    <tr>
+                      <th
+                        style="
+                          width: 42px;
+                          min-width: 42px;
+                          max-width: 42px;
+                          text-align: center;
+                          padding: 10px 4px;
+                        "
+                      >
+                        #
+                      </th>
+                      <th>Tên sản phẩm</th>
+                      <th class="r">DT (M)</th>
+                      <th class="r">SL bán</th>
+                      <th class="r">Điểm bán</th>
+                      <th class="r">NV bán</th>
+                      <th class="r">Độ phủ NV</th>
+                      <th>Xu hướng T1→T4</th>
+                      <th>Nhận xét</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(p, i) in currentGroup.products" :key="p.ma">
+                      <td
+                        style="
+                          width: 42px;
+                          min-width: 42px;
+                          max-width: 42px;
+                          text-align: center;
+                          padding: 10px 4px;
+                          color: var(--text3);
+                          font-family: var(--mono);
+                        "
+                      >
+                        {{ i + 1 }}
+                      </td>
+                      <td
+                        style="
+                          min-width: 260px;
+                          max-width: 320px;
+                          white-space: normal;
+                          word-break: break-word;
+                        "
+                      >
+                        <div
+                          style="
+                            font-weight: 500;
+                            font-size: 12px;
+                            line-height: 1.4;
+                          "
+                        >
+                          {{ p.ten }}
+                        </div>
+                        <div
+                          style="
+                            font-size: 10px;
+                            color: var(--text3);
+                            margin-top: 4px;
+                          "
+                        >
+                          {{ p.ma }}
+                        </div>
+                      </td>
+                      <td class="r">
+                        <div
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            justify-content: flex-end;
+                          "
+                        >
+                          <div
+                            style="
+                              width: 50px;
+                              height: 4px;
+                              background: var(--bg4);
+                              border-radius: 2px;
+                              overflow: hidden;
+                            "
+                          >
+                            <div
+                              style="height: 100%; background: #3b82f6"
+                              :style="{
+                                width: `${Math.round((p.rev / (getMaxProductRev() || 1)) * 100)}%`,
+                              }"
+                            ></div>
+                          </div>
+                          <span
+                            style="font-family: var(--mono); font-size: 12px"
+                            >{{ p.rev }}M</span
+                          >
+                        </div>
+                      </td>
+                      <td class="r mono">
+                        {{ p.qty.toLocaleString("vi-VN") }}
+                      </td>
+                      <td class="r mono" style="color: #10b981">
+                        {{ p.diem_ban }}
+                      </td>
+                      <td class="r mono">{{ p.nv_count }}</td>
+                      <td class="r">
+                        <span
+                          style="font-size: 11px"
+                          :style="{ color: getPhuNVColor(p.nv_count) }"
+                        >
+                          {{
+                            Math.round(
+                              (p.nv_count / (getActiveNVCount() || 1)) * 100,
+                            )
+                          }}%
+                        </span>
+                      </td>
+                      <td>
+                        <div
+                          style="
+                            display: flex;
+                            align-items: flex-end;
+                            gap: 2px;
+                            height: 32px;
+                          "
+                        >
+                          <div
+                            v-for="(v, mi) in p.monthly"
+                            :key="mi"
+                            style="
+                              width: 10px;
+                              border-radius: 2px 2px 0 0;
+                              flex-shrink: 0;
+                            "
+                            :style="{
+                              height: `${Math.max(4, Math.round((v / (getMaxMonthlyVal(p.monthly) || 0.1)) * 28))}px`,
+                              background: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#f59e0b',
+                                '#a855f7',
+                              ][mi % 4],
+                            }"
+                          ></div>
+                        </div>
+                      </td>
+                      <td>
+                        <span :class="getProductBadge(p).cls">{{
+                          getProductBadge(p).txt
+                        }}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="section-title">Top 5 sản phẩm của từng nhân viên</div>
+            <div class="chart-card mb-4">
+              <div
+                style="
+                  margin-bottom: 14px;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                "
+              >
+                <span
+                  style="font-size: 11px; color: var(--text3); opacity: 0.85"
+                  >Chọn nhân viên:</span
+                >
+                <select v-model="selectedEmployeeId" class="employee-select">
+                  <option
+                    v-for="(ten, mnv) in currentGroup.nv_info"
+                    :key="mnv"
+                    :value="mnv"
+                  >
+                    {{ ten }}
+                  </option>
+                </select>
+              </div>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
+              >
+                <!-- Left panel: List -->
+                <div class="chart-card !bg-bg3 !p-4">
+                  <div class="card-title" style="margin-bottom: 10px">
+                    Top 5 SP ·
+                    {{
+                      currentGroup.nv_info?.[selectedEmployeeId] ||
+                      selectedEmployeeId
+                    }}
+                  </div>
+                  <div
+                    v-if="!currentGroup.nv_top5?.[selectedEmployeeId]?.length"
+                    style="
+                      color: var(--text3);
+                      padding: 20px;
+                      text-align: center;
+                      font-size: 12px;
+                    "
+                  >
+                    Không có dữ liệu đơn hàng
+                  </div>
+                  <div v-else style="padding: 4px 0">
+                    <div
+                      v-for="(p, i) in currentGroup.nv_top5?.[
+                        selectedEmployeeId
+                      ] || []"
+                      :key="p.ma"
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        padding: 9px 0;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                      "
+                    >
+                      <span style="font-size: 16px; flex-shrink: 0">
+                        {{ ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][i] || "📦" }}
+                      </span>
+                      <div style="flex: 1; min-width: 0">
+                        <div
+                          style="
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: var(--text);
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                          "
+                        >
+                          {{ p.ten }}
+                        </div>
+                        <div
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            margin-top: 4px;
+                          "
+                        >
+                          <div
+                            style="
+                              flex: 1;
+                              height: 4px;
+                              background: var(--bg4);
+                              border-radius: 2px;
+                              overflow: hidden;
+                            "
+                          >
+                            <div
+                              style="height: 100%; border-radius: 2px"
+                              :style="{
+                                width: `${Math.round((p.rev / (currentGroup.nv_top5?.[selectedEmployeeId]?.[0]?.rev || 1)) * 100)}%`,
+                                background: [
+                                  '#3b82f6',
+                                  '#10b981',
+                                  '#f59e0b',
+                                  '#a855f7',
+                                  '#14b8a6',
+                                ][i % 5],
+                              }"
+                            ></div>
+                          </div>
+                          <span
+                            class="font-mono text-xs flex-shrink: 0"
+                            :style="{
+                              color: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#f59e0b',
+                                '#a855f7',
+                                '#14b8a6',
+                              ][i % 5],
+                            }"
+                          >
+                            {{ p.rev }}M
+                          </span>
+                        </div>
+                        <div
+                          style="
+                            font-size: 10px;
+                            color: var(--text3);
+                            margin-top: 2px;
+                          "
+                        >
+                          {{ p.qty.toLocaleString("vi-VN") }} đơn vị ·
+                          {{
+                            Math.round(
+                              (p.rev /
+                                (getNVSumRev(
+                                  currentGroup.nv_top5?.[selectedEmployeeId],
+                                ) || 1)) *
+                                100,
+                            )
+                          }}% DT
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right panel: Donut -->
+                <div class="chart-card !bg-bg3 !p-4">
+                  <div class="card-title" style="margin-bottom: 10px">
+                    Tỷ trọng doanh thu
+                  </div>
+                  <div
+                    v-if="!currentGroup.nv_top5?.[selectedEmployeeId]?.length"
+                    style="
+                      color: var(--text3);
+                      padding: 20px;
+                      text-align: center;
+                      font-size: 12px;
+                    "
+                  >
+                    Không có dữ liệu đơn hàng
+                  </div>
+                  <div v-else>
+                    <div
+                      style="position: relative; height: 200px; margin-top: 8px"
+                    >
+                      <canvas id="chart-nv-sp"></canvas>
+                    </div>
+                    <div style="margin-top: 10px">
+                      <div
+                        v-for="(p, i) in currentGroup.nv_top5?.[
+                          selectedEmployeeId
+                        ] || []"
+                        :key="p.ma"
+                        style="
+                          display: flex;
+                          align-items: center;
+                          justify-content: space-between;
+                          font-size: 11px;
+                          margin-bottom: 5px;
+                        "
+                      >
+                        <span
+                          style="display: flex; align-items: center; gap: 5px"
+                        >
+                          <span
+                            style="
+                              width: 8px;
+                              height: 8px;
+                              border-radius: 50%;
+                              display: inline-block;
+                            "
+                            :style="{
+                              background: [
+                                '#3b82f6',
+                                '#10b981',
+                                '#f59e0b',
+                                '#a855f7',
+                                '#14b8a6',
+                              ][i % 5],
+                            }"
+                          ></span>
+                          <span class="text-text2">{{
+                            p.ten.split(" ").slice(0, 3).join(" ")
+                          }}</span>
+                        </span>
+                        <span class="font-mono text-text">{{ p.rev }}M</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1364,10 +2526,246 @@ const getBadgeHTML = (m) => {
                 :class="a.type"
               >
                 <div class="alert-icon">{{ a.icon }}</div>
-                <div>
+                <div style="flex: 1; min-width: 0">
                   <div class="alert-title">{{ a.title }}</div>
                   <div class="alert-sub">{{ a.sub }}</div>
+
+                  <div
+                    v-if="a.details && a.details.length"
+                    style="margin-top: 10px"
+                  >
+                    <button
+                      @click="expandedAlerts[a.id] = !expandedAlerts[a.id]"
+                      style="
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        padding: 4px 10px;
+                        border-radius: 6px;
+                        font-size: 11px;
+                        color: var(--text2);
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        outline: none;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                      "
+                      onmouseover="
+                        this.style.background = 'rgba(255,255,255,0.1)'
+                      "
+                      onmouseout="
+                        this.style.background = 'rgba(255,255,255,0.05)'
+                      "
+                    >
+                      <span>{{ expandedAlerts[a.id] ? "▼" : "▶" }}</span>
+                      <span
+                        >Xem danh sách check call ({{ a.details.length }})</span
+                      >
+                    </button>
+
+                    <div
+                      v-show="expandedAlerts[a.id]"
+                      style="
+                        margin-top: 8px;
+                        max-height: 250px;
+                        overflow-y: auto;
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        border-radius: 8px;
+                        background: rgba(15, 23, 42, 0.4);
+                        padding: 6px 12px;
+                      "
+                    >
+                      <table
+                        style="
+                          width: 100%;
+                          border-collapse: collapse;
+                          text-align: left;
+                          font-size: 11px;
+                        "
+                      >
+                        <thead>
+                          <tr
+                            style="
+                              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                              color: var(--text3);
+                            "
+                          >
+                            <th style="padding: 6px 4px">Mã KH</th>
+                            <th style="padding: 6px 4px">Tên khách hàng</th>
+                            <th style="padding: 6px 4px">
+                              Khách cá nhân (KHCN)
+                            </th>
+                            <th style="padding: 6px 4px">Giờ Check-in</th>
+                            <th style="padding: 6px 4px">Giờ Check-out</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(call, ci) in a.details"
+                            :key="ci"
+                            style="
+                              border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                              color: var(--text2);
+                            "
+                          >
+                            <td
+                              style="
+                                padding: 6px 4px;
+                                font-family: var(--mono);
+                                color: var(--accent);
+                              "
+                            >
+                              {{ call.ma_kh || "—" }}
+                            </td>
+                            <td style="padding: 6px 4px; font-weight: 500">
+                              {{ call.ten_kh || "—" }}
+                            </td>
+                            <td style="padding: 6px 4px">
+                              <span
+                                v-if="call.khcn"
+                                style="
+                                  background: rgba(59, 130, 246, 0.1);
+                                  border: 1px solid rgba(59, 130, 246, 0.2);
+                                  padding: 1px 4px;
+                                  border-radius: 3px;
+                                  font-size: 9px;
+                                  color: #60a5fa;
+                                "
+                              >
+                                {{ call.khcn }}
+                              </span>
+                              <span v-else style="color: var(--text3)">—</span>
+                            </td>
+                            <td
+                              style="
+                                padding: 6px 4px;
+                                font-family: var(--mono);
+                                color: var(--amber);
+                              "
+                            >
+                              {{ call.checkin || "—" }}
+                            </td>
+                            <td
+                              style="padding: 6px 4px; font-family: var(--mono)"
+                            >
+                              {{ call.checkout || "—" }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── VIEW: GUIDE ── -->
+          <div v-if="activeView === 'guide'" class="fade-in">
+            <div class="section-title">Cẩm nang & Tra cứu Thuật ngữ</div>
+
+            <div class="mb-4">
+              <input
+                v-model="guideSearch"
+                type="text"
+                placeholder="Tìm kiếm khái niệm, chỉ số, công thức..."
+                style="
+                  width: 100%;
+                  background: rgba(15, 23, 42, 0.6);
+                  border: 1px solid rgba(255, 255, 255, 0.1);
+                  color: var(--text);
+                  padding: 12px 16px;
+                  border-radius: 8px;
+                  font-size: 13px;
+                  outline: none;
+                  transition: all 0.2s;
+                "
+                onfocus="this.style.borderColor = 'var(--accent)'"
+                onblur="this.style.borderColor = 'rgba(255, 255, 255, 0.1)'"
+              />
+            </div>
+
+            <div class="space-y-4">
+              <div
+                v-for="cat in filteredGuide"
+                :key="cat.id"
+                class="chart-card !p-5"
+              >
+                <h3
+                  style="
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--accent);
+                    margin-bottom: 12px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+                    padding-bottom: 6px;
+                  "
+                >
+                  {{ cat.title }}
+                </h3>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(
+                      auto-fill,
+                      minmax(320px, 1fr)
+                    );
+                    gap: 16px;
+                  "
+                >
+                  <div
+                    v-for="it in cat.items"
+                    :key="it.name"
+                    style="
+                      background: rgba(255, 255, 255, 0.02);
+                      border: 1px solid rgba(255, 255, 255, 0.04);
+                      border-radius: 8px;
+                      padding: 14px;
+                    "
+                  >
+                    <h4
+                      style="
+                        font-size: 13px;
+                        font-weight: 500;
+                        color: var(--text);
+                        margin-bottom: 6px;
+                      "
+                    >
+                      {{ it.name }}
+                    </h4>
+                    <p
+                      style="
+                        font-size: 11.5px;
+                        color: var(--text2);
+                        line-height: 1.5;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      {{ it.desc }}
+                    </p>
+                    <div
+                      v-if="it.formula"
+                      style="
+                        font-size: 10px;
+                        font-family: var(--mono);
+                        color: var(--text3);
+                        background: rgba(0, 0, 0, 0.15);
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        display: inline-block;
+                      "
+                    >
+                      Công thức: {{ it.formula }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="filteredGuide.length === 0"
+                style="text-align: center; color: var(--text3); padding: 40px"
+              >
+                Không tìm thấy thuật ngữ nào khớp với từ khóa tìm kiếm.
               </div>
             </div>
           </div>
@@ -1809,6 +3207,7 @@ const getBadgeHTML = (m) => {
   padding: 18px 20px;
   box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
+  margin-bottom: 16px;
 }
 .chart-card:hover {
   border-color: rgba(255, 255, 255, 0.12);
@@ -1835,6 +3234,103 @@ const getBadgeHTML = (m) => {
 /* TABLE */
 .table-wrap {
   overflow-x: auto;
+}
+.table-wrap.scrollable-y {
+  max-height: 480px;
+  overflow: auto; /* enable both vertical and horizontal scroll */
+  position: relative;
+}
+.table-wrap.scrollable-x-nv {
+  overflow-x: auto;
+  position: relative;
+}
+/* Freeze Column Nhân viên */
+.table-wrap.scrollable-x-nv table.nv-table th:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 25;
+  background: #131b2e !important;
+  box-shadow: inset -1px -1px 0 rgba(255, 255, 255, 0.1);
+}
+.table-wrap.scrollable-x-nv table.nv-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 12;
+  background: #131b2e !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* Striped Row Compatibility for locked column in Employee Table */
+.table-wrap.scrollable-x-nv table.nv-table tr:nth-child(even) td:nth-child(1) {
+  background: #172138 !important;
+}
+/* Row Hover highlight compatibility for locked column */
+.table-wrap.scrollable-x-nv table.nv-table tr:hover td:nth-child(1) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.table-wrap.scrollable-y table.nv-table th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #131b2e !important; /* solid color matching panel background */
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+/* Freeze Column # */
+.table-wrap.scrollable-y table.nv-table th:nth-child(1) {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 25;
+  background: #131b2e !important;
+}
+.table-wrap.scrollable-y table.nv-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 12;
+  background: #131b2e !important;
+}
+/* Freeze Column Tên sản phẩm */
+.table-wrap.scrollable-y table.nv-table th:nth-child(2) {
+  position: sticky;
+  left: 42px; /* width of first column */
+  top: 0;
+  z-index: 25;
+  background: #131b2e !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+.table-wrap.scrollable-y table.nv-table td:nth-child(2) {
+  position: sticky;
+  left: 42px; /* width of first column */
+  z-index: 12;
+  background: #131b2e !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* Row hover fix for sticky cells */
+.table-wrap.scrollable-y table.nv-table tr:hover td:nth-child(1),
+.table-wrap.scrollable-y table.nv-table tr:hover td:nth-child(2) {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+/* Zebra striping compatibility for locked frozen cells */
+.table-wrap.scrollable-y table.nv-table tr:nth-child(even) td:nth-child(1),
+.table-wrap.scrollable-y table.nv-table tr:nth-child(even) td:nth-child(2) {
+  background: #172138 !important;
+}
+.employee-select {
+  font-size: 12px;
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.employee-select:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+.employee-select option {
+  background-color: #141720 !important;
+  color: #f8fafc !important;
 }
 table.nv-table {
   width: 100%;
@@ -1866,8 +3362,17 @@ table.nv-table td {
 table.nv-table tr:last-child td {
   border-bottom: none;
 }
+table.nv-table tr {
+  background: #131b2e !important;
+}
+table.nv-table tr:nth-child(even) {
+  background: #172138 !important;
+}
+table.nv-table tr:nth-child(even) td {
+  background: transparent;
+}
 table.nv-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 table.nv-table td.r {
   text-align: right;
