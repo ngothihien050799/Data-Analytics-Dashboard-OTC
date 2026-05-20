@@ -1256,7 +1256,7 @@ const getBadgeHTML = (m) => {
       <!-- SIDEBAR -->
       <aside class="sidebar">
         <div class="sidebar-logo">
-          <div class="logo-mark">OTC</div>
+          <div class="logo-mark">OTC/ETC/PS/GP</div>
           <h1>Sales Dashboard</h1>
           <p>{{ rawData?.date_range || "" }}</p>
         </div>
@@ -3652,7 +3652,7 @@ const getBadgeHTML = (m) => {
   border-bottom: 1px solid var(--border);
 }
 .logo-mark {
-  width: 32px;
+  width: 120px;
   height: 32px;
   border-radius: 8px;
   background: var(--accent);
