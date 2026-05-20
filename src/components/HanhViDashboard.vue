@@ -113,6 +113,93 @@ const currentGroup = computed(() => {
   return rawData.value.groups[currentGroupIndex.value];
 });
 
+const selectedEmployeeDetailId = ref("");
+const callSearchQuery = ref("");
+const orderSearchQuery = ref("");
+const customerSearchQuery = ref("");
+const productSearchQuery = ref("");
+const focusProductSearchQuery = ref("");
+
+const selectedEmployeeDetail = computed(() => {
+  const g = currentGroup.value;
+  if (!g || !g.members) return null;
+  return g.members.find(m => m.mnv === selectedEmployeeDetailId.value) || null;
+});
+
+const filteredCallDetails = computed(() => {
+  const emp = selectedEmployeeDetail.value;
+  if (!emp || !emp.call_details) return [];
+  const q = callSearchQuery.value.trim().toLowerCase();
+  if (!q) return emp.call_details;
+  return emp.call_details.filter(c => 
+    (c.ma_kh && c.ma_kh.toLowerCase().includes(q)) ||
+    (c.ten_kh && c.ten_kh.toLowerCase().includes(q)) ||
+    (c.khcn && c.khcn.toLowerCase().includes(q)) ||
+    (c.task && c.task.toLowerCase().includes(q)) ||
+    (c.content && c.content.toLowerCase().includes(q))
+  );
+});
+
+const filteredOrderDetails = computed(() => {
+  const emp = selectedEmployeeDetail.value;
+  if (!emp || !emp.order_details) return [];
+  const q = orderSearchQuery.value.trim().toLowerCase();
+  if (!q) return emp.order_details;
+  return emp.order_details.filter(o => 
+    (o.order_id && o.order_id.toLowerCase().includes(q)) ||
+    (o.ma_kh && o.ma_kh.toLowerCase().includes(q)) ||
+    (o.ten_kh && o.ten_kh.toLowerCase().includes(q)) ||
+    (o.product_code && o.product_code.toLowerCase().includes(q)) ||
+    (o.product_name && o.product_name.toLowerCase().includes(q))
+  );
+});
+
+const filteredCustomerDetails = computed(() => {
+  const emp = selectedEmployeeDetail.value;
+  if (!emp || !emp.customer_details) return [];
+  const q = customerSearchQuery.value.trim().toLowerCase();
+  if (!q) return emp.customer_details;
+  return emp.customer_details.filter(c => 
+    (c.ma_kh && c.ma_kh.toLowerCase().includes(q)) ||
+    (c.ten_kh && c.ten_kh.toLowerCase().includes(q)) ||
+    (c.khcn && c.khcn.toLowerCase().includes(q))
+  );
+});
+
+const filteredProductDetails = computed(() => {
+  const emp = selectedEmployeeDetail.value;
+  if (!emp || !emp.product_details) return [];
+  const q = productSearchQuery.value.trim().toLowerCase();
+  if (!q) return emp.product_details;
+  return emp.product_details.filter(p => 
+    (p.ma && p.ma.toLowerCase().includes(q)) ||
+    (p.ten && p.ten.toLowerCase().includes(q))
+  );
+});
+
+const filteredFocusProductDetails = computed(() => {
+  const emp = selectedEmployeeDetail.value;
+  if (!emp || !emp.focus_product_details) return [];
+  const q = focusProductSearchQuery.value.trim().toLowerCase();
+  if (!q) return emp.focus_product_details;
+  return emp.focus_product_details.filter(p => 
+    (p.ma && p.ma.toLowerCase().includes(q)) ||
+    (p.ten && p.ten.toLowerCase().includes(q)) ||
+    (p.ck && p.ck.toLowerCase().includes(q))
+  );
+});
+
+const openEmployeeDetail = (member) => {
+  selectedEmployeeDetailId.value = member.mnv;
+  callSearchQuery.value = "";
+  orderSearchQuery.value = "";
+  customerSearchQuery.value = "";
+  productSearchQuery.value = "";
+  focusProductSearchQuery.value = "";
+  detailTab.value = "calls";
+  activeView.value = "employeeDetail";
+};
+
 const groupStats = computed(() => {
   const g = currentGroup.value;
   if (!g) return null;
@@ -1182,6 +1269,17 @@ const getBadgeHTML = (m) => {
   if (m.rev > 500) return { cls: "badge ok", txt: "DT cao" };
   return { cls: "badge off", txt: "Bình thường" };
 };
+
+const formatNumber = (val) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toLocaleString("vi-VN");
+};
+
+const formatMoneyM = (val) => {
+  if (val === undefined || val === null || isNaN(val)) return "0";
+  return Number(val).toLocaleString("vi-VN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+const detailTab = ref('calls');
 </script>
 
 <template>
@@ -1801,10 +1899,17 @@ const getBadgeHTML = (m) => {
                       <th class="r">Ngoài giờ</th>
                       <th>Xu hướng</th>
                       <th>Trạng thái</th>
+                      <th>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(m, i) in sortedByRev" :key="m.mnv">
+                    <tr
+                      v-for="(m, i) in sortedByRev"
+                      :key="m.mnv"
+                      @click="openEmployeeDetail(m)"
+                      style="cursor: pointer"
+                      title="Click để xem chi tiết nhân viên"
+                    >
                       <td>
                         <div class="name-cell">
                           <div
@@ -1931,6 +2036,27 @@ const getBadgeHTML = (m) => {
                         <span :class="getBadgeHTML(m).cls">{{
                           getBadgeHTML(m).txt
                         }}</span>
+                      </td>
+                      <td>
+                        <button
+                          @click.stop="openEmployeeDetail(m)"
+                          class="btn-crm"
+                          style="
+                            padding: 6px 12px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            border-radius: 4px;
+                            background: #3b82f6;
+                            color: #ffffff;
+                            border: none;
+                            cursor: pointer;
+                            transition: background-color 0.2s;
+                          "
+                          onmouseover="this.style.backgroundColor='#2563eb'"
+                          onmouseout="this.style.backgroundColor='#3b82f6'"
+                        >
+                          Xem chi tiết
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -2650,6 +2776,335 @@ const getBadgeHTML = (m) => {
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- ── VIEW: EMPLOYEE DETAIL (UNIFIED DASHBOARD) ── -->
+          <div v-if="activeView === 'employeeDetail'" class="fade-in">
+            <!-- Back & Header Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <button 
+                @click="activeView = 'nv'" 
+                class="btn btn-secondary" 
+                style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 6px; cursor: pointer; background: var(--bg3); color: var(--text); border: 1px solid var(--border);"
+              >
+                ← Quay lại danh sách
+              </button>
+              <div style="font-size: 12px; color: var(--text3);">
+                Chi nhánh: <strong>{{ selectedEmployeeDetail?.profile?.branch || '--' }}</strong> &middot; Nhóm: <strong>{{ selectedEmployeeDetail?.profile?.group || '--' }}</strong>
+              </div>
+            </div>
+
+            <!-- Header / Profile Summary Card -->
+            <div class="chart-card" style="margin-bottom: 24px; padding: 20px; border-radius: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  <div 
+                    class="avatar" 
+                    style="width: 56px; height: 56px; font-size: 20px; font-weight: 600; display: flex; align-items: center; justify-content: center; border-radius: 50%;"
+                    :style="{
+                      background: avatarColor(selectedEmployeeDetail?.ten || '', 0) + '20',
+                      color: avatarColor(selectedEmployeeDetail?.ten || '', 0),
+                    }"
+                  >
+                    {{ initials(selectedEmployeeDetail?.ten || '') }}
+                  </div>
+                  <div>
+                    <h2 style="font-size: 20px; font-weight: 600; margin: 0; color: var(--text);">{{ selectedEmployeeDetail?.ten }}</h2>
+                    <div style="font-size: 13px; color: var(--text3); margin-top: 4px;">
+                      Mã NV: <span class="mono">{{ selectedEmployeeDetail?.mnv }}</span> &middot; Chức vụ: {{ selectedEmployeeDetail?.profile?.position || '--' }} &middot; SĐT: {{ selectedEmployeeDetail?.profile?.phone || '--' }}
+                    </div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                  <!-- KPI 1 -->
+                  <div style="text-align: right; padding-right: 16px; border-right: 1px solid var(--border);">
+                    <div style="font-size: 11px; color: var(--text3); text-transform: uppercase;">Doanh số</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text);" class="mono">{{ selectedEmployeeDetail?.rev }}M</div>
+                  </div>
+                  <!-- KPI 2 -->
+                  <div style="text-align: right; padding-right: 16px; border-right: 1px solid var(--border);">
+                    <div style="font-size: 11px; color: var(--text3); text-transform: uppercase;">Checkin (Visit)</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text);" class="mono">{{ selectedEmployeeDetail?.visits }}</div>
+                  </div>
+                  <!-- KPI 3 -->
+                  <div style="text-align: right; padding-right: 16px; border-right: 1px solid var(--border);">
+                    <div style="font-size: 11px; color: var(--text3); text-transform: uppercase;">Số đơn hàng</div>
+                    <div style="font-size: 18px; font-weight: 600; color: var(--text);" class="mono">{{ selectedEmployeeDetail?.orders }}</div>
+                  </div>
+                  <!-- KPI 4 -->
+                  <div style="text-align: right;">
+                    <div style="font-size: 11px; color: var(--text3); text-transform: uppercase;">Tỷ lệ chuyển đổi</div>
+                    <div style="font-size: 18px; font-weight: 600; color: #3ecf8e;" class="mono">{{ selectedEmployeeDetail?.conv }}%</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab Navigation Bar -->
+              <div class="detail-tabs" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button :class="['detail-tab-btn', { active: detailTab === 'calls' }]" @click="detailTab = 'calls'">
+                  📞 Lịch sử Call
+                </button>
+                <button :class="['detail-tab-btn', { active: detailTab === 'orders' }]" @click="detailTab = 'orders'">
+                  🧾 Đơn hàng
+                </button>
+                <button :class="['detail-tab-btn', { active: detailTab === 'customers' }]" @click="detailTab = 'customers'">
+                  👥 Khách hàng
+                </button>
+                <button :class="['detail-tab-btn', { active: detailTab === 'products' }]" @click="detailTab = 'products'">
+                  📦 Sản phẩm đã bán
+                </button>
+                <button :class="['detail-tab-btn', { active: detailTab === 'focus' }]" @click="detailTab = 'focus'">
+                  🎯 Hàng trọng tâm
+                </button>
+              </div>
+            </div>
+
+            <!-- 1. CHECK CALLS SECTION -->
+            <div v-if="detailTab === 'calls'" class="chart-card mb-4" style="padding: 20px; border-radius: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <h3 class="card-title" style="margin: 0; font-size: 15px;">Lịch sử Check-in (Check Call)</h3>
+                <input 
+                  v-model="callSearchQuery" 
+                  type="text" 
+                  placeholder="Tìm kiếm theo mã KH, tên KH, ghi chú, nhiệm vụ..." 
+                  style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 280px;"
+                />
+              </div>
+              <div class="employee-table-wrap">
+                <table class="employee-crm-table compact">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Mã KH</th>
+                      <th>Tên khách hàng</th>
+                      <th>KHCN</th>
+                      <th>Check-in</th>
+                      <th class="r">Thời lượng (phút)</th>
+                      <th>Nhiệm vụ</th>
+                      <th>Trạng thái</th>
+                      <th>Ghi chú</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(c, idx) in filteredCallDetails" :key="c.id">
+                      <td class="mono">{{ idx + 1 }}</td>
+                      <td class="mono">{{ c.ma_kh }}</td>
+                      <td>{{ c.ten_kh || '--' }}</td>
+                      <td>{{ c.khcn || '--' }}</td>
+                      <td class="mono">{{ c.checkin_date }} {{ c.checkin_time }}</td>
+                      <td class="r mono">{{ c.duration }}</td>
+                      <td>{{ c.task }}</td>
+                      <td>
+                        <span class="crm-status" :class="c.status === 'Hợp lệ' ? 'success' : c.status === 'Cần bổ sung note' ? 'warning' : 'danger'">
+                          {{ c.status }}
+                        </span>
+                      </td>
+                      <td style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" :title="c.note">
+                        {{ c.note || '--' }}
+                      </td>
+                    </tr>
+                    <tr v-if="filteredCallDetails.length === 0">
+                      <td colspan="9" class="employee-empty" style="text-align: center; color: var(--text3); padding: 20px;">
+                        Không tìm thấy thông tin cuộc gọi phù hợp.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 2. ORDERS SECTION -->
+            <div v-if="detailTab === 'orders'" class="chart-card mb-4" style="padding: 20px; border-radius: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <h3 class="card-title" style="margin: 0; font-size: 15px;">Lịch sử Đơn hàng</h3>
+                <input 
+                  v-model="orderSearchQuery" 
+                  type="text" 
+                  placeholder="Tìm kiếm mã ĐH, mã KH, tên KH, sản phẩm..." 
+                  style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 280px;"
+                />
+              </div>
+              <div class="employee-table-wrap">
+                <table class="employee-crm-table compact">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Mã ĐH</th>
+                      <th>Ngày đặt</th>
+                      <th>Mã KH</th>
+                      <th>Tên khách hàng</th>
+                      <th>Kênh</th>
+                      <th>Mã SP</th>
+                      <th>Tên sản phẩm</th>
+                      <th class="r">Số lượng</th>
+                      <th class="r">Đơn giá</th>
+                      <th class="r">Doanh số (M)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(o, idx) in filteredOrderDetails" :key="idx">
+                      <td class="mono">{{ idx + 1 }}</td>
+                      <td class="mono">{{ o.order_id }}</td>
+                      <td class="mono">{{ o.order_date }} {{ o.order_time }}</td>
+                      <td class="mono">{{ o.ma_kh }}</td>
+                      <td>{{ o.ten_kh || '--' }}</td>
+                      <td class="mono">{{ o.channel }}</td>
+                      <td class="mono">{{ o.product_code }}</td>
+                      <td>{{ o.product_name }}</td>
+                      <td class="r mono">{{ formatNumber(o.qty) }}</td>
+                      <td class="r mono">{{ formatNumber(o.unit_price) }}</td>
+                      <td class="r mono">{{ formatMoneyM(o.revenue) }}</td>
+                    </tr>
+                    <tr v-if="filteredOrderDetails.length === 0">
+                      <td colspan="11" class="employee-empty" style="text-align: center; color: var(--text3); padding: 20px;">
+                        Không tìm thấy thông tin đơn hàng phù hợp.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 3. CUSTOMERS SECTION -->
+            <div v-if="detailTab === 'customers'" class="chart-card mb-4" style="padding: 20px; border-radius: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <h3 class="card-title" style="margin: 0; font-size: 15px;">Khách hàng viếng thăm / mua hàng</h3>
+                <input 
+                  v-model="customerSearchQuery" 
+                  type="text" 
+                  placeholder="Tìm kiếm mã KH, tên KH..." 
+                  style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 280px;"
+                />
+              </div>
+              <div class="employee-table-wrap">
+                <table class="employee-crm-table compact">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Mã KH</th>
+                      <th>Tên khách hàng</th>
+                      <th>Phân loại</th>
+                      <th class="r">Số lần viếng thăm</th>
+                      <th class="r">Số đơn hàng</th>
+                      <th class="r">Tổng doanh số (M)</th>
+                      <th>Lần checkin cuối</th>
+                      <th>Đơn đặt cuối</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(cust, idx) in filteredCustomerDetails" :key="cust.ma_kh">
+                      <td class="mono">{{ idx + 1 }}</td>
+                      <td class="mono">{{ cust.ma_kh }}</td>
+                      <td>{{ cust.ten_kh || '--' }}</td>
+                      <td>{{ cust.khcn || '--' }}</td>
+                      <td class="r mono">{{ cust.visits }}</td>
+                      <td class="r mono">{{ cust.orders }}</td>
+                      <td class="r mono">{{ formatMoneyM(cust.revenue) }}</td>
+                      <td class="mono">{{ cust.last_call || '--' }}</td>
+                      <td class="mono">{{ cust.last_order || '--' }}</td>
+                    </tr>
+                    <tr v-if="filteredCustomerDetails.length === 0">
+                      <td colspan="9" class="employee-empty" style="text-align: center; color: var(--text3); padding: 20px;">
+                        Không tìm thấy thông tin khách hàng phù hợp.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 4. PRODUCTS SECTION -->
+            <div v-if="detailTab === 'products'" class="chart-card mb-4" style="padding: 20px; border-radius: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                  <h3 class="card-title" style="margin: 0; font-size: 15px;">Sản phẩm đã bán</h3>
+                  <input 
+                    v-model="productSearchQuery" 
+                    type="text" 
+                    placeholder="Tìm kiếm..." 
+                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 180px;"
+                  />
+                </div>
+                <div class="employee-table-wrap">
+                  <table class="employee-crm-table compact">
+                    <thead>
+                      <tr>
+                        <th>STT</th>
+                        <th>Mã SP</th>
+                        <th>Tên sản phẩm</th>
+                        <th class="r">Số lượng</th>
+                        <th class="r">Số đơn</th>
+                        <th class="r">Số KH</th>
+                        <th class="r">Doanh thu (M)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(p, idx) in filteredProductDetails" :key="p.ma">
+                        <td class="mono">{{ idx + 1 }}</td>
+                        <td class="mono">{{ p.ma }}</td>
+                        <td>{{ p.ten }}</td>
+                        <td class="r mono">{{ formatNumber(p.qty) }}</td>
+                        <td class="r mono">{{ formatNumber(p.orders) }}</td>
+                        <td class="r mono">{{ formatNumber(p.customers) }}</td>
+                        <td class="r mono">{{ formatMoneyM(p.rev) }}</td>
+                      </tr>
+                      <tr v-if="filteredProductDetails.length === 0">
+                        <td colspan="7" class="employee-empty" style="text-align: center; color: var(--text3); padding: 20px;">
+                          Không có sản phẩm nào phù hợp.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+
+            <!-- 5. FOCUS PRODUCTS SECTION -->
+            <div v-if="detailTab === 'focus'" class="chart-card mb-4" style="padding: 20px; border-radius: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                  <h3 class="card-title" style="margin: 0; font-size: 15px;">Hàng trọng tâm (Mục tiêu)</h3>
+                  <input 
+                    v-model="focusProductSearchQuery" 
+                    type="text" 
+                    placeholder="Tìm kiếm..." 
+                    style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); width: 180px;"
+                  />
+                </div>
+                <div class="employee-table-wrap">
+                  <table class="employee-crm-table compact">
+                    <thead>
+                      <tr>
+                        <th>STT</th>
+                        <th>Mã SP</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Mức CK</th>
+                        <th class="r">SL bán</th>
+                        <th class="r">Doanh thu (M)</th>
+                        <th>Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(fp, idx) in filteredFocusProductDetails" :key="fp.ma">
+                        <td class="mono">{{ idx + 1 }}</td>
+                        <td class="mono">{{ fp.ma }}</td>
+                        <td>{{ fp.ten }}</td>
+                        <td class="mono text-center">{{ fp.ck || '--' }}</td>
+                        <td class="r mono">{{ formatNumber(fp.qty) }}</td>
+                        <td class="r mono">{{ formatMoneyM(fp.rev) }}</td>
+                        <td>
+                          <span class="crm-status" :class="fp.qty > 0 ? 'success' : 'danger'">
+                            {{ fp.qty > 0 ? 'Đã bán' : 'Chưa bán' }}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr v-if="filteredFocusProductDetails.length === 0">
+                        <td colspan="7" class="employee-empty" style="text-align: center; color: var(--text3); padding: 20px;">
+                          Không có hàng trọng tâm nào phù hợp.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+
           </div>
 
           <!-- ── VIEW: ALERTS ── -->
@@ -4492,5 +4947,134 @@ table.nv-table td.mono {
   .kpi-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.employee-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+table.employee-crm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+table.employee-crm-table th {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.6);
+  white-space: nowrap;
+}
+
+table.employee-crm-table th.r {
+  text-align: right;
+}
+
+table.employee-crm-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+table.employee-crm-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.employee-crm-table tr {
+  background: #131b2e !important;
+}
+
+table.employee-crm-table tr:nth-child(even) {
+  background: #172138 !important;
+}
+
+table.employee-crm-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+table.employee-crm-table td.r {
+  text-align: right;
+}
+
+table.employee-crm-table td.mono {
+  font-family: var(--mono);
+}
+
+/* Status Badges */
+.crm-status {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+}
+.crm-status.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+.crm-status.warning {
+  background: rgba(245, 166, 35, 0.15);
+  color: #f5a623;
+}
+.crm-status.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.employee-empty {
+  text-align: center;
+  color: var(--text3);
+  padding: 24px;
+  font-style: italic;
+}
+
+/* ── EMPLOYEE DETAIL TAB NAV ── */
+.detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font);
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
+  white-space: nowrap;
+}
+
+.detail-tab-btn:hover {
+  background: rgba(129, 140, 248, 0.12);
+  color: var(--text);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.detail-tab-btn.active {
+  background: rgba(129, 140, 248, 0.2);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.15);
+  font-weight: 600;
 }
 </style>

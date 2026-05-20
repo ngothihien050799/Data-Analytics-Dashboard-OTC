@@ -14,6 +14,9 @@ def process_hanh_vi_data(file_path):
             df_nv = pd.read_excel(xl, '1_NhanVien', dtype=str)
             df_call = pd.read_excel(xl, '2_Call', dtype={'MNV': str, 'Mã KH': str, 'KHCN': str})
             df_order = pd.read_excel(xl, '3_DonHang', dtype={'MNV': str, 'Mã KH': str, 'Mã KHCN': str})
+            df_sp = None
+            if '4_SanPham' in xl.sheet_names:
+                df_sp = pd.read_excel(xl, '4_SanPham', dtype=str)
         
         def clean_id(x):
             if pd.isna(x): return ""
@@ -29,10 +32,36 @@ def process_hanh_vi_data(file_path):
                     return ".".join(parts[:-1])
             return s
 
+        def safe_text(x):
+            if pd.isna(x): return ""
+            return str(x).strip()
+
+        def safe_int_value(x):
+            if pd.isna(x): return 0
+            try:
+                return int(float(x))
+            except:
+                return 0
+
+        def safe_float_value(x):
+            if pd.isna(x): return 0.0
+            try:
+                return float(x)
+            except:
+                return 0.0
+
+        def format_dt(val, fmt='%d/%m/%Y %H:%M'):
+            if pd.isna(val) or not isinstance(val, (datetime, pd.Timestamp)):
+                return ""
+            return val.strftime(fmt)
+
         for col in ['MNV', 'Mã KH', 'KHCN', 'Mã KHCN']:
             if col in df_nv.columns: df_nv[col] = df_nv[col].apply(clean_id)
             if col in df_call.columns: df_call[col] = df_call[col].apply(clean_id)
             if col in df_order.columns: df_order[col] = df_order[col].apply(clean_id)
+            
+        if df_sp is not None and 'Mã sản phẩm' in df_sp.columns:
+            df_sp['Mã sản phẩm'] = df_sp['Mã sản phẩm'].apply(clean_id)
             
         if 'Mã ĐH' in df_order.columns:
             df_order['Mã ĐH'] = df_order['Mã ĐH'].apply(get_base_order_id)
@@ -198,9 +227,189 @@ def process_hanh_vi_data(file_path):
                 w_rev = w_orders['Doanh Thu'].sum() / 1000000
                 weekly_rev_arr.append(float(round(w_rev, 2)))
                 
+            call_details = []
+            nv_calls_sorted = nv_calls.sort_values(by='Thời gian checkin', ascending=False)
+            for local_idx, (_, c_row) in enumerate(nv_calls_sorted.iterrows(), start=1):
+                checkin = c_row.get('Thời gian checkin')
+                checkout = c_row.get('Thời gian checkout')
+                
+                status = 'Hợp lệ'
+                if safe_int_value(c_row.get('Out_Of_Hours')) == 1:
+                    status = 'Ngoài giờ'
+                elif safe_int_value(c_row.get('Under_5m')) == 1:
+                    status = 'Dưới 5 phút'
+                elif safe_int_value(c_row.get('Is_Bad_Note')) == 1:
+                    status = 'Cần bổ sung note'
+                
+                ma_kh = safe_text(c_row.get('Mã KH'))
+                ten_kh = safe_text(c_row.get('Tên KH'))
+                khcn_name = safe_text(c_row.get('KHCN.1'))
+                note = safe_text(c_row.get('Ghi chú'))
+                task = safe_text(c_row.get('Nhiệm vụ')) or 'CSKH theo cung tuyến'
+                
+                call_details.append({
+                    "stt": safe_int_value(c_row.get('STT')) or local_idx,
+                    "id": safe_text(c_row.get('ID')) or f"call_{local_idx}",
+                    "status": status,
+                    "checkin_time": format_dt(checkin, '%H:%M:%S'),
+                    "checkin_date": format_dt(checkin, '%d/%m/%Y'),
+                    "checkout_time": format_dt(checkout, '%H:%M:%S'),
+                    "duration": float(round(safe_float_value(c_row.get('Duration_ph')), 1)),
+                    "task": task,
+                    "ma_kh": ma_kh,
+                    "ten_kh": ten_kh,
+                    "khcn": khcn_name,
+                    "content": note or 'Giới thiệu sản phẩm',
+                    "note": note
+                })
+
+            order_details = []
+            nv_orders_sorted = nv_orders.sort_values(by='Ngày đặt', ascending=False)
+            for local_idx, (_, o_row) in enumerate(nv_orders_sorted.iterrows(), start=1):
+                revenue = safe_float_value(o_row.get('Doanh Thu'))
+                order_details.append({
+                    "stt": safe_int_value(o_row.get('STT')) or local_idx,
+                    "order_id": safe_text(o_row.get('Mã ĐH')),
+                    "order_time": format_dt(o_row.get('Ngày đặt'), '%H:%M:%S'),
+                    "order_date": format_dt(o_row.get('Ngày đặt'), '%d/%m/%Y'),
+                    "ma_kh": safe_text(o_row.get('Mã KH')),
+                    "ten_kh": safe_text(o_row.get('Tên KH')),
+                    "receiver": safe_text(o_row.get('Người nhận')),
+                    "phone": safe_text(o_row.get('Liên hệ')),
+                    "channel": safe_text(o_row.get('Kênh bán')),
+                    "product_code": safe_text(o_row.get('Mã sản phẩm')),
+                    "product_name": safe_text(o_row.get('Tên sản phẩm')),
+                    "unit": safe_text(o_row.get('ĐVT')),
+                    "qty": safe_int_value(o_row.get('Số lượng')),
+                    "unit_price": safe_float_value(o_row.get('Đơn giá')),
+                    "revenue": float(round(revenue / 1000000, 2))
+                })
+
+            product_details = []
+            nv_orders_valid = nv_orders[
+                nv_orders['Mã sản phẩm'].notna() &
+                (nv_orders['Mã sản phẩm'].astype(str).str.strip() != "")
+            ]
+            if not nv_orders_valid.empty:
+                for ma_sp, p_df in nv_orders_valid.groupby('Mã sản phẩm'):
+                    product_details.append({
+                        "ma": safe_text(ma_sp),
+                        "ten": safe_text(p_df['Tên sản phẩm'].iloc[0]) if 'Tên sản phẩm' in p_df.columns else safe_text(ma_sp),
+                        "qty": safe_int_value(p_df['Số lượng'].sum()),
+                        "orders": safe_int_value(p_df['Mã ĐH'].nunique()) if 'Mã ĐH' in p_df.columns else len(p_df),
+                        "customers": safe_int_value(p_df['Mã KH'].nunique()) if 'Mã KH' in p_df.columns else 0,
+                        "rev": float(round(p_df['Doanh Thu'].sum() / 1000000, 2))
+                    })
+                product_details = sorted(product_details, key=lambda x: x['rev'], reverse=True)
+
+            customer_map = {}
+            for _, c_row in nv_calls.iterrows():
+                ma_kh = safe_text(c_row.get('Mã KH')) or safe_text(c_row.get('KHCN'))
+                if not ma_kh:
+                    continue
+                if ma_kh not in customer_map:
+                    customer_map[ma_kh] = {
+                        "ma_kh": ma_kh,
+                        "ten_kh": safe_text(c_row.get('Tên KH')),
+                        "khcn": safe_text(c_row.get('KHCN.1')),
+                        "visits": 0,
+                        "orders": 0,
+                        "revenue": 0.0,
+                        "last_call": "",
+                        "last_order": "",
+                        "_order_ids": set()
+                    }
+                rec = customer_map[ma_kh]
+                rec["visits"] += 1
+                call_time = c_row.get('Thời gian checkin')
+                if pd.notna(call_time):
+                    last_call = datetime.strptime(rec["last_call"], '%d/%m/%Y %H:%M') if rec["last_call"] else None
+                    if last_call is None or call_time > last_call:
+                        rec["last_call"] = format_dt(call_time, '%d/%m/%Y %H:%M')
+
+            for _, o_row in nv_orders.iterrows():
+                ma_kh = safe_text(o_row.get('Mã KH')) or safe_text(o_row.get('Mã KHCN'))
+                if not ma_kh:
+                    continue
+                if ma_kh not in customer_map:
+                    customer_map[ma_kh] = {
+                        "ma_kh": ma_kh,
+                        "ten_kh": safe_text(o_row.get('Tên KH')),
+                        "khcn": "",
+                        "visits": 0,
+                        "orders": 0,
+                        "revenue": 0.0,
+                        "last_call": "",
+                        "last_order": "",
+                        "_order_ids": set()
+                    }
+                rec = customer_map[ma_kh]
+                if not rec["ten_kh"]:
+                    rec["ten_kh"] = safe_text(o_row.get('Tên KH'))
+                order_id = safe_text(o_row.get('Mã ĐH'))
+                if order_id:
+                    rec["_order_ids"].add(order_id)
+                rec["revenue"] += safe_float_value(o_row.get('Doanh Thu')) / 1000000
+                order_time = o_row.get('Ngày đặt')
+                if pd.notna(order_time):
+                    last_order = datetime.strptime(rec["last_order"], '%d/%m/%Y %H:%M') if rec["last_order"] else None
+                    if last_order is None or order_time > last_order:
+                        rec["last_order"] = format_dt(order_time, '%d/%m/%Y %H:%M')
+
+            customer_details = []
+            for rec in customer_map.values():
+                order_ids = rec.pop("_order_ids")
+                rec["orders"] = len(order_ids)
+                rec["revenue"] = float(round(rec["revenue"], 2))
+                customer_details.append(rec)
+            customer_details = sorted(customer_details, key=lambda x: (x["revenue"], x["visits"]), reverse=True)
+
+            focus_product_details = []
+            if df_sp is not None:
+                emp_ck = ""
+                nhom_str = str(nhom).upper()
+                for ck in ['CK1', 'CK2', 'CK3']:
+                    if ck in nhom_str:
+                        emp_ck = ck
+                        break
+                
+                if emp_ck:
+                    df_sp_filtered = df_sp[df_sp['CK'].astype(str).str.strip().str.upper() == emp_ck]
+                else:
+                    df_sp_filtered = df_sp
+                
+                for _, sp_row in df_sp_filtered.iterrows():
+                    ma_sp = sp_row['Mã sản phẩm']
+                    ten_sp = sp_row['Tên sản phẩm']
+                    sp_ck = sp_row.get('CK', '')
+                    
+                    p_orders = nv_orders[nv_orders['Mã sản phẩm'] == ma_sp]
+                    
+                    qty = safe_int_value(p_orders['Số lượng'].sum())
+                    orders = safe_int_value(p_orders['Mã ĐH'].nunique()) if 'Mã ĐH' in p_orders.columns else len(p_orders)
+                    customers = safe_int_value(p_orders['Mã KH'].nunique()) if 'Mã KH' in p_orders.columns else 0
+                    rev = float(round(p_orders['Doanh Thu'].sum() / 1000000, 2))
+                    
+                    focus_product_details.append({
+                        "ma": str(ma_sp),
+                        "ten": str(ten_sp) if pd.notna(ten_sp) else str(ma_sp),
+                        "ck": str(sp_ck) if pd.notna(sp_ck) else "",
+                        "qty": qty,
+                        "orders": orders,
+                        "customers": customers,
+                        "rev": rev
+                    })
+
             member = {
                 "mnv": str(mnv),
                 "ten": str(ten_nv),
+                "profile": {
+                    "phone": safe_text(row_nv.get('SĐT')),
+                    "position": safe_text(row_nv.get('Vị trí')),
+                    "department": safe_text(row_nv.get('Phòng ban')),
+                    "branch": safe_text(row_nv.get('Chi nhánh')),
+                    "group": safe_text(nhom)
+                },
                 "tuoi_nghe": int(tuoi_nghe) if pd.notna(tuoi_nghe) else 0,
                 "visits": int(so_visit),
                 "rev": float(round(doanh_thu_m, 1)),
@@ -215,7 +424,12 @@ def process_hanh_vi_data(file_path):
                 "short_visits": int(visit_duoi_5p),
                 "monthly": [int(x) for x in monthly_arr],
                 "weekly": [int(x) for x in weekly_arr],
-                "weekly_rev": [float(x) for x in weekly_rev_arr]
+                "weekly_rev": [float(x) for x in weekly_rev_arr],
+                "call_details": call_details,
+                "order_details": order_details,
+                "product_details": product_details,
+                "customer_details": customer_details,
+                "focus_product_details": focus_product_details
             }
             groups_dict[nhom]["members"].append(member)
 

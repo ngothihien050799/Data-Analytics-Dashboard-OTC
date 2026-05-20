@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from hanh_vi import process_hanh_vi_data
 import json
 
-file_path = "bao_cao_hanh_vi_ban_hang_04_2026.xlsx"
+file_path = "04-2026 - Danh sách data tổng hợp khách hàng trọng tâm nhóm.xlsx"
 print(f"Testing process_hanh_vi_data with {file_path}...")
 try:
     result = process_hanh_vi_data(file_path)
